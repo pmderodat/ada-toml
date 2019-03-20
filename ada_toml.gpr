@@ -1,0 +1,28 @@
+library project Ada_TOML is
+
+   type Any_Build_Mode is ("dev", "prod");
+   Build_Mode : Any_Build_Mode := external("BUILD_MODE", "dev");
+
+   type Any_Library_Type is ("static", "relocatable", "static-pic");
+   Library_Type : Any_Library_Type := external("LIBRARY_TYPE", "static");
+
+   for Languages use ("Ada");
+   for Source_Dirs use ("src");
+   for Object_Dir use "obj";
+   for Library_Name use "ada_toml";
+   for Library_Kind use Library_Type;
+   for Library_Dir use "lib";
+
+   Ada_Switches := ();
+   case Build_Mode is
+      when "dev" =>
+         Ada_Switches := ("-g", "-O0", "-gnatwae", "-gnata");
+      when "prod" =>
+         Ada_Switches := ("-g", "-O2");
+   end case;
+
+   package Compiler is
+      for Default_Switches ("Ada") use Ada_Switches;
+   end Compiler;
+
+end Ada_TOML;
