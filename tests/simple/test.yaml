@@ -1,0 +1,4 @@
+driver: decoder
+output: {
+    "a": {"type": "bool", "value": "true"}
+}

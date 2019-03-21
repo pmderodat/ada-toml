@@ -1,0 +1,18 @@
+driver: decoder
+output: {
+    "a": {
+        "key1": {"type": "bool", "value": "true"},
+        "b": {
+            "key2": {"type": "bool", "value": "true"}
+        }
+    },
+
+    "c": {
+        "key3": {"type": "bool", "value": "false"},
+        "a": {
+            "b": {
+                "c": {"type": "bool", "value": "true"}
+            }
+        }
+    }
+}

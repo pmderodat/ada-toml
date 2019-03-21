@@ -1,0 +1,9 @@
+[a]
+key1 = true
+
+[a.b]
+key2 = true
+
+[c]
+key3 = false
+a.b.c = true
