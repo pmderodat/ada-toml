@@ -120,6 +120,21 @@ package TOML is
       with Pre => Value.Kind = TOML_Table;
    --  Likewise, but take an unbounded string
 
+   --  The following types and primitive allow one to iterate on key/value
+   --  entries conveniently in a simple FOR loop.
+
+   type Table_Entry is record
+      Key   : Unbounded_UTF8_String;
+      Value : TOML_Value;
+   end record;
+
+   type Table_Entry_Array is array (Positive range <>) of Table_Entry;
+
+   function Iterate_On_Table (Value : TOML_Value) return Table_Entry_Array
+      with Pre => Value.Kind = TOML_Table;
+   --  Return an array of key/value pairs for all entries in Value. The result
+   --  is sorted by key.
+
    ---------------------
    -- Array accessors --
    ---------------------

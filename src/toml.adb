@@ -322,6 +322,20 @@ package body TOML is
               else No_TOML_Value);
    end Get_Or_Null;
 
+   ----------------------
+   -- Iterate_On_Table --
+   ----------------------
+
+   function Iterate_On_Table (Value : TOML_Value) return Table_Entry_Array is
+      Keys : constant Key_Array := Value.Keys;
+   begin
+      return Result : Table_Entry_Array (Keys'Range) do
+         for I In Keys'Range loop
+            Result (I) := (Keys (I), Value.Get (Keys (I)));
+         end loop;
+      end return;
+   end Iterate_On_Table;
+
    ------------
    -- Length --
    ------------

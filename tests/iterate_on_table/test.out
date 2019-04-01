@@ -1,0 +1,4 @@
+array is a TOML_ARRAY
+bool is a TOML_BOOLEAN
+int is a TOML_INTEGER
+string is a TOML_STRING
