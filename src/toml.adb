@@ -168,6 +168,42 @@ package body TOML is
       return Value.Value.Kind;
    end Kind;
 
+   -----------
+   -- Clone --
+   -----------
+
+   function Clone (Value : TOML_Value) return TOML_Value is
+      Result : TOML_Value;
+   begin
+      case Value.Kind is
+         when TOML_Table =>
+            Result := Create_Table;
+            for Key of Value.Keys loop
+               Result.Set (Key, Value.Get (Key).Clone);
+            end loop;
+
+         when TOML_Array =>
+            Result := Create_Array;
+            for I in 1 .. Value.Length loop
+               Result.Append (Value.Item (I));
+            end loop;
+
+         when TOML_String =>
+            Result := Create_String (Value.Value.String_Value);
+
+         when TOML_Integer =>
+            Result := Create_Integer (Value.Value.Integer_Value);
+
+         when TOML_Boolean =>
+            Result := Create_Boolean (Value.Value.Boolean_Value);
+
+         when TOML_Float | TOML_Offset_Date_Time .. TOML_Local_Time =>
+            raise Program_Error;
+      end case;
+
+      return Result;
+   end Clone;
+
    ----------------
    -- As_Boolean --
    ----------------

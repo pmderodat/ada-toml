@@ -56,6 +56,10 @@ package TOML is
       with Pre => Value.Is_Present;
    --  Return the kind of TOML node for the given Value
 
+   function Clone (Value : TOML_Value) return TOML_Value
+      with Pre => Value.Is_Present;
+   --  Return a reference to a deep copy for Value
+
    --------------------
    -- Atom accessors --
    --------------------

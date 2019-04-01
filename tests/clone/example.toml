@@ -1,0 +1,4 @@
+array = [true, false]
+bool = true
+int = 0
+string = "Hello, world!"
