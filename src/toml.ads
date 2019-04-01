@@ -219,6 +219,14 @@ package TOML is
       with Pre => Value.Kind = TOML_Table;
    --  Likewise, but take an unbounded string
 
+   procedure Unset (Value : TOML_Value; Key : String)
+      with Pre => Value.Kind = TOML_Table and then Value.Has (Key);
+   --  Remove the Key entry in Value
+
+   procedure Unset (Value : TOML_Value; Key : Unbounded_UTF8_String)
+      with Pre => Value.Kind = TOML_Table and then Value.Has (Key);
+   --  Likewise, but take an unbounded string
+
    ---------------------
    -- Array modifiers --
    ---------------------

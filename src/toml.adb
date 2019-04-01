@@ -474,6 +474,24 @@ package body TOML is
         (Key, Entry_Value, Dummy_Position, Dummy_Inserted);
    end Set_Default;
 
+   -----------
+   -- Unset --
+   -----------
+
+   procedure Unset (Value : TOML_Value; Key : String) is
+   begin
+      Value.Unset (To_Unbounded_String (Key));
+   end Unset;
+
+   -----------
+   -- Unset --
+   -----------
+
+   procedure Unset (Value : TOML_Value; Key : Unbounded_UTF8_String) is
+   begin
+      Value.Value.Map_Value.Delete (Key);
+   end Unset;
+
    ------------------
    -- Create_Array --
    ------------------
