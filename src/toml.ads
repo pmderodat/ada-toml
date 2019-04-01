@@ -56,6 +56,14 @@ package TOML is
       with Pre => Value.Is_Present;
    --  Return the kind of TOML node for the given Value
 
+   function Equals (Left, Right : TOML_Value) return Boolean
+      with Pre => Left.Is_Present and then Right.Is_Present;
+   --  Return whether Left and Right refer to equivalent TOML documents.
+   --
+   --  Note that this is very different from the built-in "=" operator:
+   --  the TOML_Value type has by-reference meaning, so "=" compares identity,
+   --  not structural equivalence.
+
    function Clone (Value : TOML_Value) return TOML_Value
       with Pre => Value.Is_Present;
    --  Return a reference to a deep copy for Value

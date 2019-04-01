@@ -168,6 +168,66 @@ package body TOML is
       return Value.Value.Kind;
    end Kind;
 
+   ------------
+   -- Equals --
+   ------------
+
+   function Equals (Left, Right : TOML_Value) return Boolean is
+   begin
+      --  If Left and Right refer to the same document, they are obviously
+      --  equivalent (X is equivalent to X). If they don't have the same kind,
+      --  they are obviously not equivalent.
+
+      if Left = Right then
+         return True;
+      elsif Left.Kind /= Right.Kind then
+         return False;
+      end if;
+
+      case Left.Kind is
+         when TOML_Table =>
+            declare
+               Left_Keys  : constant Key_Array := Left.Keys;
+               Right_Keys : constant Key_Array := Right.Keys;
+            begin
+               if Left_Keys /= Right_Keys then
+                  return False;
+               end if;
+
+               for K of Left_Keys loop
+                  if not Equals (Left.Get (K), Right.Get (K)) then
+                     return False;
+                  end if;
+               end loop;
+            end;
+
+         when TOML_Array =>
+            if Left.Length /= Right.Length then
+               return False;
+            end if;
+
+            for I in 1 .. Left.Length loop
+               if not Equals (Left.Item (I), Right.Item (I)) then
+                  return False;
+               end if;
+            end loop;
+
+         when TOML_String =>
+            return Left.Value.String_Value = Right.Value.String_Value;
+
+         when TOML_Integer =>
+            return Left.Value.Integer_Value = Right.Value.Integer_Value;
+
+         when TOML_Boolean =>
+            return Left.Value.Boolean_Value = Right.Value.Boolean_Value;
+
+         when TOML_Float | TOML_Offset_Date_Time .. TOML_Local_Time =>
+            raise Program_Error;
+      end case;
+
+      return True;
+   end Equals;
+
    -----------
    -- Clone --
    -----------
