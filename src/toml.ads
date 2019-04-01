@@ -306,6 +306,10 @@ package TOML is
                   and then Ada.Text_IO.Mode (File) in Out_File | Append_File;
    --  Serialize Value and write the corresponding TOML document to File
 
+   function Format_Error (Result : Read_Result) return String
+      with Pre => not Result.Success;
+   --   Format the error information in Result into a GNU-style diagnostic
+
 private
 
    type TOML_Value_Record;

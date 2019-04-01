@@ -659,6 +659,29 @@ package body TOML is
       Dump_To_File (File, Value);
    end Dump_To_File;
 
+   ------------------
+   -- Format_Error --
+   ------------------
+
+   function Format_Error (Result : Read_Result) return String is
+      Formatted : Unbounded_UTF8_String;
+   begin
+      if Result.Location.Line /= 0 then
+         declare
+            L : constant String := Result.Location.Line'Image;
+            C : constant String := Result.Location.Column'Image;
+         begin
+            Append (Formatted, L (L'First + 1 .. L'Last));
+            Append (Formatted, ":");
+            Append (Formatted, C (C'First + 1 .. C'Last));
+            Append (Formatted, ": ");
+         end;
+      end if;
+
+      Append (Formatted, Result.Message);
+      return To_String (Formatted);
+   end Format_Error;
+
    ------------
    -- Adjust --
    ------------

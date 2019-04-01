@@ -235,15 +235,7 @@ begin
    if Result.Success then
       Dump (Result.Value);
    else
-      declare
-         Line   : constant String := Strip_Number (Result.Location.Line'Image);
-         Column : constant String :=
-            Strip_Number (Result.Location.Column'Image);
-      begin
-         IO.Put_Line
-           (Line & ":" & Column & ": "
-            & Ada.Strings.Unbounded.To_String (Result.Message));
-      end;
+      IO.Put_Line (TOML.Format_Error (Result));
       Cmd.Set_Exit_Status (Cmd.Failure);
    end if;
 end Ada_TOML_Decode;
