@@ -1,5 +1,11 @@
 #! /usr/bin/env python
 
+"""
+e3.testsuite-based testsuite for Ada_TOML.
+
+Just execute this script as a main to run the testsuite.
+"""
+
 from __future__ import absolute_import, print_function
 
 import difflib
@@ -17,6 +23,12 @@ TESTSUITE_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 def canonicalize_json(value):
+    """
+    Decode all bytes in the ``value`` JSON value.
+
+    This clones the input JSON value, replacing all bytes with the
+    corresponding strings, assuming UTF-8 encoding.
+    """
     if isinstance(value, (int, bool)):
         return value
     elif isinstance(value, str):
@@ -31,6 +43,17 @@ def canonicalize_json(value):
 
 
 class DecoderTestDriver(TestDriver):
+    """
+    Test driver to run the "ada_toml_decode" program.
+
+    This test driver runs the "ada_toml_decode" program on the test-provided
+    "input.toml" input file and checks that its output is equivalent to the
+    "output" entry in the test.yaml file.
+
+    If the test.yaml file contains a "expected_error" entry, check instead that
+    the program exits with a non-zero status code and that it emits the
+    provided error message.
+    """
 
     decoder_program = 'obj-checkers/ada_toml_decode'
     input_file = 'input.toml'
@@ -39,12 +62,20 @@ class DecoderTestDriver(TestDriver):
         self.add_fragment(dag, 'run')
 
     def push_status(self, log, status=TestStatus.FAIL):
+        """
+        Log content to the result, set test status and push the result.
+
+        :param None|str log: Optional content to log.
+        """
         if log:
             self.result.log += log
         self.result.set_status(status)
         self.push_result()
 
     def push_success(self):
+        """
+        Shortcut to set test status to PASS and to push the result.
+        """
         self.push_status(None, TestStatus.PASS)
 
     def run(self, previous_values):
