@@ -279,6 +279,14 @@ is
 
             Put ("""" & Value.As_String & """");
 
+         when TOML_Array =>
+            Put ("[" & ASCII.LF);
+            for I in 1 .. Value.Length loop
+               Dump_Inline (Value.Item (I));
+               Put ("," & ASCII.LF);
+            end loop;
+            Put ("]");
+
          when others =>
             --  TODO: implement dump for other kinds of values
             raise Program_Error;
