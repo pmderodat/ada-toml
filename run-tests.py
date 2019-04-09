@@ -249,7 +249,7 @@ class Testsuite(e3.testsuite.Testsuite):
                  ' GPR_PROJECT_PATH. Adding it is the default for developer'
                  ' convenience.')
 
-    def tear_up(self):
+    def set_up(self):
         if not self.main.args.no_auto_path:
             old_value = os.environ.get('GPR_PROJECT_PATH', '')
             if old_value:
