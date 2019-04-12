@@ -1,7 +1,6 @@
 with Ada.Containers.Generic_Array_Sort;
 with Ada.Containers.Hashed_Maps;
 with Ada.Containers.Vectors;
-with Ada.Exceptions;
 with Ada.Strings.Unbounded.Hash;
 with Ada.Unchecked_Deallocation;
 
@@ -12,26 +11,9 @@ package body TOML is
 
    use Ada.Strings.Unbounded;
 
-   procedure Get
-     (Stream : in out Ada.Text_IO.File_Type;
-      EOF    : out Boolean;
-      Byte   : out Character);
-   --  Callback for Parse_File
-
-   function Parse_File is new TOML.Generic_Parse
-     (Input_Stream => Ada.Text_IO.File_Type,
-      Get          => Get);
-
    procedure Dump_To_String is new TOML.Generic_Dump
      (Output_Stream => Unbounded_UTF8_String,
       Put           => Append);
-
-   procedure Put_To_File (File : in out Ada.Text_IO.File_Type; Bytes : String);
-   --  Callback for TOML.Generic_Dump
-
-   procedure Dump_To_File is new TOML.Generic_Dump
-     (Output_Stream => Ada.Text_IO.File_Type,
-      Put           => Put_To_File);
 
    procedure Sort_Keys is new Ada.Containers.Generic_Array_Sort
      (Index_Type   => Positive,
@@ -89,41 +71,10 @@ package body TOML is
    function Create_Value (Rec : TOML_Value_Record_Access) return TOML_Value;
    --  Wrap a value record in a value. This resets its ref-count to 1.
 
-   function Create_Error
-     (Message : String; Location : Source_Location) return Read_Result;
-   --  Create an unsuccessful Read_Result value with the provided error
-   --  information.
-
    procedure Set_Item_Kind (Value : TOML_Value; Item : TOML_Value)
       with Pre => Value.Kind = TOML_Array;
    --  If Value (an array) has its item kind set, do nothing. Otherwise, set it
    --  to Item's kind.
-
-   ---------
-   -- Get --
-   ---------
-
-   procedure Get
-     (Stream : in out Ada.Text_IO.File_Type;
-      EOF    : out Boolean;
-      Byte   : out Character) is
-   begin
-      EOF := False;
-      Ada.Text_IO.Get_Immediate (Stream, Byte);
-   exception
-      when Ada.Text_IO.End_Error =>
-         EOF := True;
-   end Get;
-
-   -----------------
-   -- Put_To_File --
-   -----------------
-
-   procedure Put_To_File (File : in out Ada.Text_IO.File_Type; Bytes : String)
-   is
-   begin
-      Ada.Text_IO.Put (File, Bytes);
-   end Put_To_File;
 
    ------------------
    -- Create_Value --
@@ -624,29 +575,6 @@ package body TOML is
       Value.Value.Array_Value.Insert (Index, Item);
    end Insert_Before;
 
-   ---------------
-   -- Load_File --
-   ---------------
-
-   function Load_File (Filename : String) return Read_Result is
-      use Ada.Exceptions, Ada.Text_IO;
-
-      File : File_Type;
-   begin
-      begin
-         Open (File, In_File, Filename);
-      exception
-         when Exc : Name_Error | Use_Error =>
-            return Create_Error
-              ("cannot open " & Filename & ": " & Exception_Message (Exc),
-               No_Location);
-      end;
-
-      return Result : constant Read_Result := Parse_File (File) do
-         Close (File);
-      end return;
-   end Load_File;
-
    -----------------
    -- Load_String --
    -----------------
@@ -708,16 +636,6 @@ package body TOML is
          Dump_To_String (Result, Value);
       end return;
    end Dump_As_Unbounded;
-
-   ------------------
-   -- Dump_To_File --
-   ------------------
-
-   procedure Dump_To_File
-     (Value : TOML_Value; File : in out Ada.Text_IO.File_Type) is
-   begin
-      Dump_To_File (File, Value);
-   end Dump_To_File;
 
    ------------------
    -- Format_Error --

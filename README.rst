@@ -48,7 +48,7 @@ Parsing a TOML file is as easy as using the ``TOML.Load_File`` function:
 
    declare
       Result : constant TOML.Read_Result :=
-         TOML.Load_File ("config.toml");
+         TOML.Text_IO.Load_File ("config.toml");
    begin
       if Result.Success then
          Ada.Text_IO.Put_Line ("config.toml loaded with success!");

@@ -1,10 +1,9 @@
 with Ada.Finalization;
 with Ada.Strings.Unbounded;
-with Ada.Text_IO;
 
 with Interfaces;
 
-package TOML is
+package TOML with Preelaborate is
 
    pragma Warnings (Off);
    use type Ada.Strings.Unbounded.Unbounded_String;
@@ -291,9 +290,6 @@ package TOML is
       end case;
    end record;
 
-   function Load_File (Filename : String) return Read_Result;
-   --  Read Filename and parse its content as a TOML document
-
    function Load_String (Content : String) return Read_Result;
    --  Parse Content as a TOML document
 
@@ -305,14 +301,6 @@ package TOML is
      (Value : TOML_Value) return Unbounded_UTF8_String
       with Pre => Value.Kind = TOML_Table;
    --  Likewise, but return an unbounded string
-
-   use all type Ada.Text_IO.File_Mode;
-
-   procedure Dump_To_File
-     (Value : TOML_Value; File : in out Ada.Text_IO.File_Type)
-      with Pre => Value.Kind = TOML_Table
-                  and then Ada.Text_IO.Mode (File) in Out_File | Append_File;
-   --  Serialize Value and write the corresponding TOML document to File
 
    function Format_Error (Result : Read_Result) return String
       with Pre => not Result.Success;
@@ -332,5 +320,10 @@ private
 
    No_TOML_Value : constant TOML_Value := (Ada.Finalization.Controlled
                                            with Value => null);
+
+   function Create_Error
+     (Message : String; Location : Source_Location) return Read_Result;
+   --  Create an unsuccessful Read_Result value with the provided error
+   --  information.
 
 end TOML;

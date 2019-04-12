@@ -13,5 +13,6 @@ generic
    --  Maximal number of columns that tab characters (0x09) skip
 
 function TOML.Generic_Parse
-  (Stream : in out Input_Stream) return TOML.Read_Result;
+  (Stream : in out Input_Stream) return TOML.Read_Result
+  with Preelaborate;
 --  Read a TOML document from Stream and return the corresponding value

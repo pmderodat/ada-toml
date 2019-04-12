@@ -8,5 +8,5 @@ generic
 procedure TOML.Generic_Dump
   (Stream : in out Output_Stream;
    Value  : TOML_Value)
-   with Pre => Value.Kind = TOML_Table;
+   with Preelaborate, Pre => Value.Kind = TOML_Table;
 --  Turn the given Value into a valid TOML document and write it to Stream
