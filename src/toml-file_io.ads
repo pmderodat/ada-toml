@@ -1,6 +1,6 @@
 with Ada.Text_IO;
 
-package TOML.Text_IO is
+package TOML.File_IO is
 
    use all type Ada.Text_IO.File_Mode;
 
@@ -13,4 +13,4 @@ package TOML.Text_IO is
                   and then Ada.Text_IO.Mode (File) in Out_File | Append_File;
    --  Serialize Value and write the corresponding TOML document to File
 
-end TOML.Text_IO;
+end TOML.File_IO;

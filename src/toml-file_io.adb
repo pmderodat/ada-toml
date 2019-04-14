@@ -3,7 +3,7 @@ with Ada.Exceptions;
 with TOML.Generic_Dump;
 with TOML.Generic_Parse;
 
-package body TOML.Text_IO is
+package body TOML.File_IO is
 
    procedure Get
      (Stream : in out Ada.Text_IO.File_Type;
@@ -81,4 +81,4 @@ package body TOML.Text_IO is
       Dump_To_File (File, Value);
    end Dump_To_File;   
    
-end TOML.Text_IO;
+end TOML.File_IO;
