@@ -238,6 +238,7 @@ package TOML with Preelaborate is
       with Pre  => L.Kind = TOML_Table and then R.Kind = TOML_Table,
            Post => Merge'Result.Kind = TOML_Table;
    --  Merge two tables. If a key is present in both, Constraint_Error is raised
+   --  The operation is shallow, so the result table shares values with L and R
 
    ---------------------
    -- Array modifiers --
