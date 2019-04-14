@@ -42,13 +42,13 @@ values make up a tree, this type has reference semantics. This means that
 modifying a TOML node does not modify the corresponding ``TOML_Value`` value
 itself, but rather the TOML value that is referenced.
 
-Parsing a TOML file is as easy as using the ``TOML.Load_File`` function:
+Parsing a TOML file is as easy as using the ``TOML.File_IO.Load_File`` function:
 
 .. code-block:: ada
 
    declare
       Result : constant TOML.Read_Result :=
-         TOML.Load_File ("config.toml");
+         TOML.File_IO.Load_File ("config.toml");
    begin
       if Result.Success then
          Ada.Text_IO.Put_Line ("config.toml loaded with success!");
