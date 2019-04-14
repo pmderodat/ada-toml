@@ -2,6 +2,8 @@ with Ada.Text_IO;
 
 package TOML.File_IO is
 
+   --  Subprograms to load/save TOML files
+
    use all type Ada.Text_IO.File_Mode;
 
    function Load_File (Filename : String) return Read_Result;
