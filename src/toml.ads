@@ -302,6 +302,9 @@ package TOML with Preelaborate is
       with Pre => Value.Kind = TOML_Table;
    --  Likewise, but return an unbounded string
 
+   --  To keep this package preelaborable, subprograms that perform I/O on files
+   --  are found in TOML.File_IO
+
    function Format_Error (Result : Read_Result) return String
       with Pre => not Result.Success;
    --   Format the error information in Result into a GNU-style diagnostic
