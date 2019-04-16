@@ -503,6 +503,28 @@ package body TOML is
       Value.Value.Map_Value.Delete (Key);
    end Unset;
 
+   -----------
+   -- Merge --
+   -----------
+
+   function Merge (L, R : TOML_Value) return TOML_Value is
+      Table : constant TOML_Value := Create_Table;
+   begin
+      for Key of L.Keys loop
+         Table.Set (Key, L.Get (Key));
+      end loop;
+
+      for Key of R.Keys loop
+         if Table.Has (Key) then
+            raise Constraint_Error with "duplicate key";
+         else
+            Table.Set (Key, R.Get (Key));
+         end if;
+      end loop;
+
+      return Table;
+   end Merge;
+
    ------------------
    -- Create_Array --
    ------------------
