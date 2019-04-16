@@ -1,9 +1,11 @@
 with Ada.Text_IO;
 
 with TOML;
+with TOML.File_IO;
 
 procedure Main is
-   Value : constant TOML.TOML_Value := TOML.Load_File ("example.toml").Value;
+   Value : constant TOML.TOML_Value :=
+      TOML.File_IO.Load_File ("example.toml").Value;
    Clone : constant TOML.TOML_Value := Value.Clone;
 begin
    --  Mutate Value: the Clone is supposed to be unaffected
