@@ -1,3 +1,6 @@
+Merging two tables with duplicate keys raises an exception
+
+Merged table:
 a = 1
 b = [
 1,
