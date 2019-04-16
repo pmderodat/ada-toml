@@ -253,7 +253,7 @@ class Testsuite(e3.testsuite.Testsuite):
         if not self.main.args.no_auto_path:
             old_value = os.environ.get('GPR_PROJECT_PATH', '')
             if old_value:
-                new_value = '{}{}{}'.format(TESTUITE_ROOT, os.path.pathsep,
+                new_value = '{}{}{}'.format(TESTSUITE_ROOT, os.path.pathsep,
                                             old_value)
             else:
                 new_value = TESTSUITE_ROOT
