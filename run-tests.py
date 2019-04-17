@@ -101,13 +101,27 @@ class DecoderTestDriver(TestDriver):
     """
 
     decoder_program = 'obj-checkers/ada_toml_decode'
+    encoder_program = 'obj-checkers/ada_toml_encode'
     input_file = 'input.toml'
 
     def add_test(self, dag):
         self.add_fragment(dag, 'run')
 
+    def _run_decoder(self, filename):
+        with open(filename, 'rb') as f:
+            return Run([os.path.join(TESTSUITE_ROOT, self.decoder_program)],
+                       input=f)
+
+    def _run_encoder(self, filename):
+        with open(filename, 'rb') as f:
+            return Run([os.path.join(TESTSUITE_ROOT, self.encoder_program)],
+                       input=f)
+
     def run(self, previous_values):
-        test_dir = self.test_env['test_dir']
+        work_dir = self.test_env['working_dir']
+
+        # Copy all test material to the working directory
+        sync_tree(self.test_env['test_dir'], work_dir)
 
         # Get the expected JSON document, or the expected error message
         expected_error = None
@@ -123,13 +137,11 @@ class DecoderTestDriver(TestDriver):
             expected_json = canonicalize_json(expected_json)
 
         # Read the input TOML content
-        with open(os.path.join(test_dir, self.input_file), 'rb') as f:
+        with open(os.path.join(work_dir, self.input_file), 'rb') as f:
             input_str = f.read()
 
         # Run the decoder with the TOML content on the standard input
-        with open(os.path.join(test_dir, self.input_file), 'rb') as f:
-            p = Run([os.path.join(TESTSUITE_ROOT, self.decoder_program)],
-                    input=f)
+        p = self._run_decoder(os.path.join(work_dir, self.input_file))
 
         # If we expected an error, make sure we have the expected one
         if expected_error:
@@ -148,6 +160,8 @@ class DecoderTestDriver(TestDriver):
                 'Decoder exitted with error status ({}):'
                 '\n{}'.format(p.status, p.out))
 
+        json_text_output = p.out
+
         try:
             p_output_json = json.loads(p.out)
         except ValueError as exc:
@@ -163,6 +177,39 @@ class DecoderTestDriver(TestDriver):
             self.push_for_diff('Unexpected JSON output for the decoder',
                                p_output_pretty, expected_pretty,
                                'decoder output', 'expected output')
+
+        # Now, try to reformat a TOML document from the JSON output and make
+        # sure it produces something that the decoder can re-parse the same
+        # way.
+
+        # Put the JSON input in a file (to ease post-mortem analysis)
+        input_json_file = os.path.join(work_dir, 'input.json')
+        with open(input_json_file, 'w') as f:
+            f.write(json_text_output)
+
+        # Run the encoder on it
+        p = self._run_encoder(input_json_file)
+        if p.status != 0:
+            return self.push_status('Encoder failed: {}'.format(p.out))
+
+        # Put the resulting TOML document in a file
+        input_toml_file = os.path.join(work_dir, 'second-input.toml')
+        with open(input_toml_file, 'w') as f:
+            f.write(p.out)
+
+        # Run the decoder on it
+        p = self._run_decoder(input_toml_file)
+        if p.status != 0:
+            return self.push_status(
+                'Second decoder exitted with error status ({}):'
+                '\n{}'.format(p.status, p.out))
+
+        if json_text_output != p.out:
+            self.push_for_diff('Unexpected second decoder output',
+                               p.out.splitlines(),
+                               json_text_output.splitlines(),
+                               'second decoder output',
+                               'first decoder output')
 
         return self.push_success()
 
