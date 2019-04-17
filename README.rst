@@ -32,6 +32,8 @@ Installation to ``$PREFIX`` is simply done using GPRinstall:
 
    gprinstall -Pada_toml.gpr --prefix=$PREFIX
 
+See `TESTING.rst <TESTING.rst>`_ to run the testsuite.
+
 
 Quick tutorial
 --------------
