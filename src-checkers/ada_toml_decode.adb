@@ -30,7 +30,7 @@ procedure Ada_TOML_Decode is
    --  Callback for TOML.Generic_Parse
 
    subtype Wrapped_Kind is
-      TOML.Any_Value_Kind range TOML.TOML_Array ..  TOML.TOML_Boolean;
+      TOML.Any_Value_Kind range TOML.TOML_Array .. TOML.TOML_Boolean;
    --  TODO: handle other kinds
 
    function Kind_Name (Kind : Wrapped_Kind) return String;
