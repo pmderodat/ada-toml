@@ -31,7 +31,7 @@ def canonicalize_json(value):
     This clones the input JSON value, replacing all bytes with the
     corresponding strings, assuming UTF-8 encoding.
     """
-    if isinstance(value, (int, bool)):
+    if isinstance(value, (int, bool, unicode)):
         return value
     elif isinstance(value, str):
         return value.decode('utf-8')
@@ -41,7 +41,7 @@ def canonicalize_json(value):
         return {canonicalize_json(key): canonicalize_json(item)
                 for key, item in value.iteritems()}
     else:
-        raise ValueError('Invalid JSON value: {}'.format(value))
+        raise ValueError('Invalid JSON value: {}'.format(repr(value)))
 
 
 class TestDriver(e3.testsuite.driver.TestDriver):
