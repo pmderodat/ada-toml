@@ -17,6 +17,10 @@ is
      (S : Unbounded_UTF8_String) return Unbounded_UTF8_String;
    --  Format a valid TOML representation of the given string (S)
 
+   function Format_Key
+     (Key : Unbounded_UTF8_String) return Unbounded_UTF8_String;
+   --  Format a valid TOML representation of the given Key
+
    function Append_Key
      (Prefix, Suffix : Unbounded_UTF8_String) return Unbounded_UTF8_String;
    --  Return a key corresponding to "Prefix.Suffix" (if Prefix is not empty)
@@ -141,19 +145,41 @@ is
    end Format_String;
 
    ----------------
+   -- Format_Key --
+   ----------------
+
+   function Format_Key
+     (Key : Unbounded_UTF8_String) return Unbounded_UTF8_String is
+   begin
+      --  Determine if we need to quote Key, and if so, do it
+
+      for I in 1 .. Length (Key) loop
+         if Element (Key, I) not in
+            '0' .. '9' | 'A' .. 'Z' | 'a' .. 'z' | '-' | '_'
+         then
+            return Format_String (Key);
+         end if;
+      end loop;
+
+      --  Otherwise, we can return the key as-is (without quoting)
+
+      return Key;
+   end Format_Key;
+
+   ----------------
    -- Append_Key --
    ----------------
 
    function Append_Key
-     (Prefix, Suffix : Unbounded_UTF8_String) return Unbounded_UTF8_String is
+     (Prefix, Suffix : Unbounded_UTF8_String) return Unbounded_UTF8_String
+   is
+      Result : Unbounded_UTF8_String := Prefix;
    begin
-      --  TODO: quote keys when needed
-
-      if Length (Prefix) = 0 then
-         return Suffix;
-      else
-         return Prefix & "." & Suffix;
+      if Length (Result) > 0 then
+         Append (Result, ".");
       end if;
+      Append (Result, Format_Key (Suffix));
+      return Result;
    end Append_Key;
 
    --------------------
@@ -289,7 +315,7 @@ is
          --  key = value
 
          for Pair of Other_Pairs loop
-            Put (To_String (Pair.Key));
+            Put (To_String (Format_Key (Pair.Key)));
             Put (" = ");
             Dump_Inline (Pair.Value);
             Put ((1 => ASCII.LF));

@@ -1,0 +1,8 @@
+driver: decoder
+output : {
+    "0.0":    {"type": "integer", "value": "1"},
+    "0.1":    {"2": {"type": "integer", "value": "2"}},
+    "key":    {"type": "integer", "value": "3"},
+    "\u0000": {"type": "integer", "value": "4"},
+    "0.1.2":  {},
+}
