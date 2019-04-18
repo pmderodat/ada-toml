@@ -1,0 +1,14 @@
+driver: decoder
+output : {
+    "null":      {"type": "string", "value": "\u0000"},
+    "bell":      {"type": "string", "value": "\u0007"},
+    "del":       {"type": "string", "value": "\u00ff"},
+    "bs":        {"type": "string", "value": "\b"},
+    "ht":        {"type": "string", "value": "\t"},
+    "lf":        {"type": "string", "value": "\n"},
+    "ff":        {"type": "string", "value": "\f"},
+    "cr":        {"type": "string", "value": "\r"},
+    "quote":     {"type": "string", "value": "\""},
+    "backslash": {"type": "string", "value": "\\"},
+    "others":    {"type": "string", "value": "~H\u00e9llo W\u00f6rld!~"},
+}

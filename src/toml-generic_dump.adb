@@ -13,6 +13,10 @@ is
 
    type Map_Pair_Array is array (Positive range <>) of Map_Pair;
 
+   function Format_String
+     (S : Unbounded_UTF8_String) return Unbounded_UTF8_String;
+   --  Format a valid TOML representation of the given string (S)
+
    function Append_Key
      (Prefix, Suffix : Unbounded_UTF8_String) return Unbounded_UTF8_String;
    --  Return a key corresponding to "Prefix.Suffix" (if Prefix is not empty)
@@ -64,6 +68,77 @@ is
    begin
       Put (Stream, Bytes);
    end Put;
+
+   -------------------
+   -- Format_String --
+   -------------------
+
+   function Format_String
+     (S : Unbounded_UTF8_String) return Unbounded_UTF8_String
+   is
+      Result : Unbounded_UTF8_String;
+   begin
+      Append (Result, """");
+      for I in 1 .. Length (S) loop
+         --  Forward printable ASCII bytes (except quotes and backslashes)
+         --  and non-ASCII bytes, but emit escapes for quotes and control
+         --  characters.
+         declare
+            Char : constant Character := Element (S, I);
+         begin
+            case Char is
+               --  The only way to represent the following control characters
+               --  is to use the unicode escape (\uXXXX).
+               when ASCII.NUL .. ASCII.BEL
+                  | ASCII.VT
+                  | ASCII.SO .. ASCII.US
+                  | ASCII.DEL
+               =>
+                  declare
+                     use type Interfaces.Unsigned_8;
+
+                     Byte : Interfaces.Unsigned_8 := Character'Pos (Char);
+                     Repr : String (1 .. 6) := "\u0000";
+                     I    : Natural range 3 .. 6 := 6;
+                  begin
+                     while Byte /= 0 loop
+                        Repr (I) := Character'Val
+                          (Character'Pos ('0') + Byte mod 16);
+                        Byte := Byte / 16;
+                        I := I - 1;
+                     end loop;
+                     Append (Result, Repr);
+                  end;
+
+               --  The following control characters have dedicated escape
+               --  sequences:
+
+               when ASCII.BS => Append (Result, "\b");
+               when ASCII.HT => Append (Result, "\t");
+               when ASCII.LF => Append (Result, "\n");
+               when ASCII.FF => Append (Result, "\f");
+               when ASCII.CR => Append (Result, "\r");
+
+               --  Quotes and backslashes must be escaped
+
+               when '"'      => Append (Result, "\""");
+               when '\'      => Append (Result, "\\");
+
+               --  All other bytes can be directly forwarded to the string
+               --  literal.
+
+               when ' ' | '!'
+                  | '#' .. '['
+                  | ']' .. '~'
+                  | Character'Val (128) .. Character'Val(255)
+               =>
+                  Append (Result, Char);
+            end case;
+         end;
+      end loop;
+      Append (Result, """");
+      return Result;
+   end Format_String;
 
    ----------------
    -- Append_Key --
@@ -277,7 +352,7 @@ is
          when TOML_String =>
             --  TODO: escape strings when needed
 
-            Put ("""" & Value.As_String & """");
+            Put (To_String (Format_String (Value.As_Unbounded_String)));
 
          when TOML_Array =>
             Put ("[" & ASCII.LF);
