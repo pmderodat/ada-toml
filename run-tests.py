@@ -170,6 +170,10 @@ class DecoderTestDriver(TestDriver):
                 '\n{}'
                 '\nOutput was: {}'.format(exc, p.out))
 
+        # Canonicalize to Unicode the output of `json.loads` for the same
+        # reason we canonicalized `expected_json`.
+        p_output_json = canonicalize_json(expected_json)
+
         if p_output_json != expected_json:
             p_output_pretty = pprint.pformat(p_output_json).splitlines()
             expected_pretty = pprint.pformat(expected_json).splitlines()
