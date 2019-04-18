@@ -1,7 +1,7 @@
 library project Ada_TOML is
 
    type Any_Build_Mode is ("dev", "prod");
-   Build_Mode : Any_Build_Mode := external("BUILD_MODE", "dev");
+   Build_Mode : Any_Build_Mode := external("ADA_TOML_BUILD_MODE", "dev");
 
    type Any_Library_Type is ("static", "relocatable", "static-pic");
    Library_Type : Any_Library_Type := external("LIBRARY_TYPE", "static");
