@@ -139,6 +139,25 @@ procedure Ada_TOML_Encode is
                            Result := TOML.Create_Boolean (Boolean'Value (S));
                         end;
 
+                     elsif T = "date" then
+                        declare
+                           S : constant String := V.Get;
+                           I : constant Positive := S'First;
+
+                           pragma Assert (S'Length = 10);
+                           pragma Assert (S (I + 4) = '-');
+                           pragma Assert (S (I + 7) = '-');
+
+                           Year  : String renames S (I + 0 .. I + 3);
+                           Month : String renames S (I + 5 .. I + 6);
+                           Day   : String renames S (I + 8 .. I + 9);
+                        begin
+                           Result := TOML.Create_Local_Date
+                             ((TOML.Any_Year'Value (Year),
+                               TOML.Any_Month'Value (Month),
+                               TOML.Any_Day'Value (Day)));
+                        end;
+
                      elsif T = "array" then
                         Result := Interpret (V);
 

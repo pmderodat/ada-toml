@@ -60,6 +60,13 @@ is
    --  Dump the given array (Array_Value) as a top-level array of tables, under
    --  the given keys (Parent_Key "." Array_Key).
 
+   function Strip_Number (Image : String) return String;
+   --  If the first character in Image is a space, return the rest of Image
+
+   function Pad_Number (Image : String; Digit_Count : Positive) return String;
+   --  Return Strip_Number (Image) left-padded with 0 so that the result is
+   --  Digit_Count long.
+
    procedure Dump_Inline (Value : TOML_Value)
       with Pre => Value /= No_TOML_Value;
    --  Dump the given value using the inline format
@@ -352,6 +359,31 @@ is
       end loop;
    end Dump_Toplevel_Array;
 
+   ------------------
+   -- Strip_Number --
+   ------------------
+
+   function Strip_Number (Image : String) return String is
+   begin
+      if Image'Length > 0 and then Image (Image'First) = ' ' then
+         return Image (Image'First + 1 .. Image'Last);
+      else
+         return Image;
+      end if;
+   end Strip_Number;
+
+   ----------------
+   -- Pad_Number --
+   ----------------
+
+   function Pad_Number (Image : String; Digit_Count : Positive) return String
+   is
+      Result : constant String := Strip_Number (Image);
+   begin
+      pragma Assert (Result'Length <= Digit_Count);
+      return (Result'Length + 1 .. Digit_Count => '0') & Result;
+   end Pad_Number;
+
    -----------------
    -- Dump_Inline --
    -----------------
@@ -363,22 +395,21 @@ is
             Put ((if Value.As_Boolean then "true" else "false"));
 
          when TOML_Integer =>
-            declare
-               --  Make sure to strip the leading space, if present
-
-               Image : constant String := Any_Integer'Image (Value.As_Integer);
-               First : constant Positive :=
-                 (if Image (Image'First) = ' '
-                  then Image'First + 1
-                  else Image'First);
-            begin
-               Put (Image (First .. Image'Last));
-            end;
+            Put (Strip_Number (Any_Integer'Image (Value.As_Integer)));
 
          when TOML_String =>
             --  TODO: escape strings when needed
 
             Put (To_String (Format_String (Value.As_Unbounded_String)));
+
+         when TOML_Local_Date =>
+            declare
+               V : constant Any_Local_Date := Value.As_Local_Date;
+            begin
+               Put (Pad_Number (V.Year'Image, 4)
+                    & "-" & Pad_Number (V.Month'Image, 2)
+                    & "-" & Pad_Number (V.Day'Image, 2));
+            end;
 
          when TOML_Array =>
             Put ("[" & ASCII.LF);

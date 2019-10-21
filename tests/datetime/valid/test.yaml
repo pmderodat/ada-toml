@@ -1,0 +1,6 @@
+driver: decoder
+output: {
+    "d1": {"type": "date", "value": "0000-01-01"},
+    "d2": {"type": "date", "value": "9999-12-31"},
+    "d3": {"type": "date", "value": "1970-02-28"}
+}

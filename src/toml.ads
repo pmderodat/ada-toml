@@ -41,6 +41,16 @@ package TOML with Preelaborate is
    type Any_Float is new Interfaces.IEEE_Float_64;
    --  TOML advises to implement its float values as IEEE 754 binary64 values
 
+   type Any_Year is range 1 .. 9999;
+   type Any_Month is range 1 .. 12;
+   type Any_Day is range 1 .. 31;
+
+   type Any_Local_Date is record
+      Year  : Any_Year;
+      Month : Any_Month;
+      Day   : Any_Day;
+   end record;
+
    -----------------------
    -- Generic accessors --
    -----------------------
@@ -87,6 +97,10 @@ package TOML with Preelaborate is
      (Value : TOML_Value) return Unbounded_UTF8_String
       with Pre => Value.Kind = TOML_String;
    --  Likewise, but return an unbounded string
+
+   function As_Local_Date (Value : TOML_Value) return Any_Local_Date
+      with Pre => Value.Kind = TOML_Local_Date;
+   --  Return the local date that Value represents
 
    ---------------------
    -- Table accessors --
@@ -192,6 +206,11 @@ package TOML with Preelaborate is
       with Post => Create_String'Result.Kind = TOML_String
                    and then Create_String'Result.As_Unbounded_String = Value;
    --  Create a TOML string value
+
+   function Create_Local_Date (Value : Any_Local_Date) return TOML_Value
+      with Post => Create_Local_Date'Result.Kind = TOML_Local_Date
+                   and then Create_Local_Date'Result.As_Local_Date = Value;
+   --  Create a TOML local date value
 
    ---------------------
    -- Table modifiers --

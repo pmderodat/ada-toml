@@ -29,8 +29,10 @@ procedure Ada_TOML_Decode is
      (Stream : in out Stdin_Stream; EOF : out Boolean; Byte : out Character);
    --  Callback for TOML.Generic_Parse
 
-   subtype Wrapped_Kind is
-      TOML.Any_Value_Kind range TOML.TOML_Array .. TOML.TOML_Boolean;
+   subtype Wrapped_Kind is TOML.Any_Value_Kind
+      with Static_Predicate =>
+         Wrapped_Kind in TOML.TOML_Array .. TOML.TOML_Boolean
+                       | TOML.TOML_Local_Date;
    --  TODO: handle other kinds
 
    function Kind_Name (Kind : Wrapped_Kind) return String;
@@ -39,11 +41,15 @@ procedure Ada_TOML_Decode is
    function Strip_Number (Image : String) return String;
    --  If the first character in Image is a space, return the rest of Image
 
+   function Pad_Number (Image : String; Digit_Count : Positive) return String;
+   --  Return Strip_Number (Image) left-padded with 0 so that the result is
+   --  Digit_Count long.
+
    procedure Dump_String (Value : TOML.Unbounded_UTF8_String);
    --  Dump the given string as a JSON string literal
 
    procedure Dump_Array (Value : TOML.TOML_Value)
-      with Pre => Value.Kind = TOML.TOML_Array;
+      with Pre => TOML."=" (Value.Kind, TOML.TOML_Array);
    --  Dump the given TOML array as a JSON array
 
    procedure Dump (Value : TOML.TOML_Value);
@@ -58,11 +64,12 @@ procedure Ada_TOML_Decode is
    function Kind_Name (Kind : Wrapped_Kind) return String is
    begin
       return (case Kind is
-              when TOML.TOML_Array   => "array",
-              when TOML.TOML_String  => "string",
-              when TOML.TOML_Integer => "integer",
-              when TOML.TOML_Float   => "float",
-              when TOML.TOML_Boolean => "bool");
+              when TOML.TOML_Array      => "array",
+              when TOML.TOML_String     => "string",
+              when TOML.TOML_Integer    => "integer",
+              when TOML.TOML_Float      => "float",
+              when TOML.TOML_Boolean    => "bool",
+              when TOML.TOML_Local_Date => "date");
    end Kind_Name;
 
    ------------------
@@ -77,6 +84,18 @@ procedure Ada_TOML_Decode is
          return Image;
       end if;
    end Strip_Number;
+
+   ----------------
+   -- Pad_Number --
+   ----------------
+
+   function Pad_Number (Image : String; Digit_Count : Positive) return String
+   is
+      Result : constant String := Strip_Number (Image);
+   begin
+      pragma Assert (Result'Length <= Digit_Count);
+      return (Result'Length + 1 .. Digit_Count => '0') & Result;
+   end Pad_Number;
 
    -----------------
    -- Dump_String --
@@ -205,6 +224,15 @@ procedure Ada_TOML_Decode is
                else
                   IO.Put_Line ("""false""");
                end if;
+
+            when TOML_Local_Date =>
+               declare
+                  V : constant TOML.Any_Local_Date := Value.As_Local_Date;
+               begin
+                  IO.Put_Line ("""" & Pad_Number (V.Year'Image, 4)
+                               & "-" & Pad_Number (V.Month'Image, 2)
+                               & "-" & Pad_Number (V.Day'Image, 2) & """");
+               end;
          end case;
          IO.Put_Line ("}");
       end if;

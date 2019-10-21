@@ -57,7 +57,7 @@ is
       Square_Bracket_Open, Square_Bracket_Close,
       Double_Square_Bracket_Open, Double_Square_Bracket_Close,
 
-      Boolean_Literal, Integer_Literal, String_Literal);
+      Boolean_Literal, Integer_Literal, String_Literal, Local_Date_Literal);
 
    subtype No_Text_Token is Token_Kind range
       Newline ..  Double_Square_Bracket_Close;
@@ -66,10 +66,11 @@ is
 
    type Any_Token (Kind : Token_Kind := Token_Kind'First) is record
       case Kind is
-         when No_Text_Token   => null;
-         when Boolean_Literal => Boolean_Value : Boolean;
-         when Integer_Literal => Integer_Value : Any_Integer;
-         when String_Literal  => String_Value  : Unbounded_UTF8_String;
+         when No_Text_Token      => null;
+         when Boolean_Literal    => Boolean_Value    : Boolean;
+         when Integer_Literal    => Integer_Value    : Any_Integer;
+         when String_Literal     => String_Value     : Unbounded_UTF8_String;
+         when Local_Date_Literal => Local_Date_Value : Any_Local_Date;
       end case;
    end record;
 
@@ -182,10 +183,30 @@ is
    --  Codepoint_Buffer. Return whether successful, updating Token_Buffer
    --  accordingly.
 
-   function Read_Integer return Boolean;
-   --  Helper for Read_Token. Read an integer literal, whose first digit (or
-   --  sign) is in Codepoint_Buffer. Return whether successful, updating
-   --  Token_Buffer accordingly.
+   function Read_Number_Like return Boolean;
+   --  Helper for Read_Token. Read an integer literal or a local date, whose
+   --  first digit (or sign) is in Codepoint_Buffer. Return whether successful,
+   --  updating Token_Buffer accordingly.
+
+   function Read_Datetime_Field
+     (What        : String;
+      Digit_Count : Positive;
+      Base_Value  : Interfaces.Unsigned_64;
+      Base_Digits : Natural;
+      Value       : out Interfaces.Unsigned_64) return Boolean;
+   --  Helper to read dates and times. Read a specific date/time field: What is
+   --  the name of the field to read. Considering that we already read
+   --  Base_Digits number of digits and that the decoded value so far is
+   --  Base_Value, continue consuming digits until we have a total of
+   --  Digit_Count digits. Put the decoded value in Value and return True if
+   --  successful. Create a lexing error and return False otherwise.
+
+   function Read_Local_Date
+     (Base_Value : Interfaces.Unsigned_64; Base_Digits : Natural)
+      return Boolean;
+   --  Helper for Read_Number_Like. Read a local date, considering that we
+   --  already consumed Base_Digits digits, whose value is Base_Value. Return
+   --  whether successful, updating Token_Buffer accordingly.
 
    function Read_Bare_Key return Boolean;
    --  Helper for Read_Token. Read a bare key, whose first character is in
@@ -602,7 +623,7 @@ is
                if Key_Expected then
                   return Read_Bare_Key;
                else
-                  return Read_Integer;
+                  return Read_Number_Like;
                end if;
 
             when 'A' .. 'Z' | 'a' .. 'z' | '_' =>
@@ -623,13 +644,13 @@ is
                end case;
 
             when '+' =>
-               return Read_Integer;
+               return Read_Number_Like;
 
             when '-' =>
                if Key_Expected then
                   return Read_Bare_Key;
                else
-                  return Read_Integer;
+                  return Read_Number_Like;
                end if;
 
             when others =>
@@ -961,11 +982,11 @@ is
       end loop;
    end Read_Quoted_String;
 
-   ------------------
-   -- Read_Integer --
-   ------------------
+   ----------------------
+   -- Read_Number_Like --
+   ----------------------
 
-   function Read_Integer return Boolean is
+   function Read_Number_Like return Boolean is
       use Interfaces;
 
       type Any_Format is (Decimal, Hexadecimal, Binary, Octal);
@@ -981,6 +1002,12 @@ is
 
       Abs_Value : Interfaces.Unsigned_64 := 0;
       --  Absolute value for the integer that is parsed
+
+      Digit_Count : Natural := 0;
+      --  Number of digit codepoints consumed
+
+      Had_Underscore : Boolean := False;
+      --  Whether we found an underscore at all for this token
 
       Just_Passed_Underscore : Boolean := False;
       --  Whether the last codepoint processed was an underscore
@@ -1020,7 +1047,10 @@ is
          end if;
 
          case Codepoint_Buffer.Codepoint is
-            when '0' .. '9' | '_' =>
+            when '0' .. '9' =>
+               return Read_Local_Date (Base_Value => 0, Base_Digits => 1);
+
+            when '_' =>
                return Create_Lexing_Error ("leading zeros not allowed");
 
             when 'b' =>
@@ -1075,6 +1105,7 @@ is
                   Digit := Codepoint - Wide_Wide_Character'Pos ('A') + 10;
 
                when '_' =>
+                  Had_Underscore := True;
                   if Just_Passed_Underscore then
                      return Create_Lexing_Error
                        ("underscores must be surrounded by digits");
@@ -1088,6 +1119,18 @@ is
                   --  error.
                   return Create_Lexing_Error;
 
+               when '-' =>
+
+                  --  If we had no underscore and no base specifier, we have a
+                  --  local date.
+
+                  if Format /= Decimal or else Had_Underscore then
+                     Reemit_Codepoint;
+                     exit;
+                  end if;
+
+                  return Read_Local_Date (Abs_Value, Digit_Count);
+
                when others =>
                   --  If we end up here, either we found the beginning of a new
                   --  token, or a token separator: stop reading the integer
@@ -1100,6 +1143,7 @@ is
             --  Decode the digit (if we found one)
 
             if Is_Digit then
+               Digit_Count := Digit_Count + 1;
                if Digit >= Base (Format) then
                   return Create_Lexing_Error;
                end if;
@@ -1155,7 +1199,146 @@ is
          Token_Buffer.Token.Integer_Value := Any_Integer (Rel_Value);
          return True;
       end;
-   end Read_Integer;
+   end Read_Number_Like;
+
+   -------------------------
+   -- Read_Datetime_Field --
+   -------------------------
+
+   function Read_Datetime_Field
+     (What        : String;
+      Digit_Count : Positive;
+      Base_Value  : Interfaces.Unsigned_64;
+      Base_Digits : Natural;
+      Value       : out Interfaces.Unsigned_64) return Boolean
+   is
+      function Create_Error return Boolean is
+        (Create_Lexing_Error ("invalid " & What));
+   begin
+      if Base_Digits > Digit_Count then
+         return Create_Error;
+      end if;
+
+      Value := Base_value;
+
+      for DC in Base_Digits + 1 .. Digit_Count loop
+
+         --  Decode the current digit and add it to the decoded value
+
+         if Codepoint_Buffer.Codepoint not in '0' .. '9' then
+            return Create_Error;
+         end if;
+
+         declare
+            use Interfaces;
+            Codepoint : constant Unsigned_64 :=
+               Wide_Wide_Character'Pos (Codepoint_Buffer.Codepoint);
+         begin
+            Value := 10 * Value + Codepoint - Wide_Wide_Character'Pos ('0');
+         end;
+
+         --  Read the next digit. We accept EOF only if we were able to read
+         --  as many digits as requested.
+
+         if not Read_Codepoint then
+            return False;
+         elsif Codepoint_Buffer.EOF then
+            exit when DC = Digit_Count;
+            return Create_Error;
+         end if;
+      end loop;
+
+      --  This check is not necessary for correctness. It improves user
+      --  diagnostics: if a digit follows the last expected digit, we know
+      --  there is an error.
+
+      if not Codepoint_Buffer.EOF
+         and then Codepoint_Buffer.Codepoint in '0' .. '9'
+      then
+         return Create_Error;
+      end if;
+
+      --  If we came across a codepoint, re-emit it so that the lexing loop
+      --  can call Read_Token once more.
+
+      if Codepoint_Buffer.EOF then
+         Reemit_Codepoint;
+      end if;
+
+      return True;
+   end Read_Datetime_Field;
+
+   ---------------------
+   -- Read_Local_Date --
+   ---------------------
+
+   function Read_Local_Date
+     (Base_Value : Interfaces.Unsigned_64; Base_Digits : Natural)
+      return Boolean
+   is
+      use Interfaces;
+
+      subtype Year_Range is Unsigned_64 range
+         Unsigned_64 (Any_Year'First) .. Unsigned_64 (Any_Year'Last);
+      subtype Month_Range is Unsigned_64 range
+         Unsigned_64 (Any_Month'First) .. Unsigned_64 (Any_Month'Last);
+      subtype Day_Range is Unsigned_64 range
+         Unsigned_64 (Any_Day'First) .. Unsigned_64 (Any_Day'Last);
+
+      Year, Month, Day : Unsigned_64 := Base_Value;
+   begin
+      --  Finish reading the year and consume the following dash
+
+      if not Read_Datetime_Field ("year", 4, Base_Value, Base_Digits, Year)
+      then
+         return False;
+      elsif Codepoint_Buffer.EOF or else Codepoint_Buffer.Codepoint /= '-' then
+         return Create_Lexing_Error ("invalid year");
+      end if;
+
+      --  Now read the month and consume the following dash
+
+      if not Read_Codepoint then
+         return False;
+      elsif Codepoint_Buffer.EOF then
+         return Create_Lexing_Error ("invalid month");
+      elsif not Read_Datetime_Field ("month", 2, 0, 0, Month) then
+         return False;
+      elsif Codepoint_Buffer.EOF or else Codepoint_Buffer.Codepoint /= '-' then
+         return Create_Lexing_Error ("invalid month");
+      end if;
+
+      --  Now read the day
+
+      if not Read_Codepoint then
+         return False;
+      elsif Codepoint_Buffer.EOF then
+         return Create_Lexing_Error ("invalid day");
+      elsif not Read_Datetime_Field ("day", 2, 0, 0, Day) then
+         return False;
+      end if;
+
+      --  Check that all fields are in range.
+      --
+      --  TODO: check that the date they represent is valid. This is not
+      --  trivial as TOML can handle all years between 0 and 9999 while
+      --  Ada.Calendar supports only 1901 through 2399.
+
+      if Year not in Year_Range then
+         return Create_Lexing_Error ("out of range year");
+      elsif Month not in Month_Range then
+         return Create_Lexing_Error ("out of range month");
+      elsif Day not in Day_Range then
+         return Create_Lexing_Error ("out of range day");
+      end if;
+
+      Token_Buffer.Token :=
+        (Kind             => Local_Date_Literal,
+         Local_Date_Value => (Year  => Any_Year (Year),
+                              Month => Any_Month (Month),
+                              Day   => Any_Day (Day)));
+      return True;
+   end Read_Local_Date;
 
    -------------------
    -- Read_Bare_Key --
@@ -1469,6 +1652,9 @@ is
 
          when String_Literal =>
             Value := Create_String (Token_Buffer.Token.String_Value);
+
+         when Local_Date_Literal =>
+            Value := Create_Local_Date (Token_Buffer.Token.Local_Date_Value);
 
          when Square_Bracket_Open =>
             return Parse_Array (Value);

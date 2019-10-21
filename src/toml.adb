@@ -60,7 +60,10 @@ package body TOML is
 
          when TOML_Offset_Date_Time => null;
          when TOML_Local_Date_Time => null;
-         when TOML_Local_Date => null;
+
+         when TOML_Local_Date =>
+            Local_Date_Value : Any_Local_Date;
+
          when TOML_Local_Time => null;
       end case;
    end record;
@@ -172,7 +175,14 @@ package body TOML is
          when TOML_Boolean =>
             return Left.Value.Boolean_Value = Right.Value.Boolean_Value;
 
-         when TOML_Float | TOML_Offset_Date_Time .. TOML_Local_Time =>
+         when TOML_Local_Date =>
+            return Left.Value.Local_Date_Value = Right.Value.Local_Date_Value;
+
+         when TOML_Float
+            | TOML_Offset_Date_Time
+            | TOML_Local_Date_Time
+            | TOML_Local_Time
+         =>
             raise Program_Error;
       end case;
 
@@ -208,7 +218,14 @@ package body TOML is
          when TOML_Boolean =>
             Result := Create_Boolean (Value.Value.Boolean_Value);
 
-         when TOML_Float | TOML_Offset_Date_Time .. TOML_Local_Time =>
+         when TOML_Local_Date =>
+            Result := Create_Local_Date (Value.Value.Local_Date_Value);
+
+         when TOML_Float
+            | TOML_Offset_Date_Time
+            | TOML_Local_Date_Time
+            | TOML_Local_Time
+         =>
             raise Program_Error;
       end case;
 
@@ -251,6 +268,15 @@ package body TOML is
    begin
       return Value.Value.String_Value;
    end As_Unbounded_String;
+
+   -------------------
+   -- As_Local_Date --
+   -------------------
+
+   function As_Local_Date (Value : TOML_Value) return Any_Local_Date is
+   begin
+      return Value.Value.Local_Date_Value;
+   end As_Local_Date;
 
    ---------
    -- Has --
@@ -423,6 +449,18 @@ package body TOML is
          Ref_Count    => 1,
          String_Value => Value));
    end Create_String;
+
+   -----------------------
+   -- Create_Local_Date --
+   -----------------------
+
+   function Create_Local_Date (Value : Any_Local_Date) return TOML_Value is
+   begin
+      return Create_Value (new TOML_Value_Record'
+        (Kind             => TOML_Local_Date,
+         Ref_Count        => 1,
+         Local_Date_Value => Value));
+   end Create_Local_Date;
 
    ------------------
    -- Create_Table --
