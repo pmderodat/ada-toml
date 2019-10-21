@@ -31,7 +31,7 @@ is
       Last_Table_Pair : out Natural;
       Last_Array_Pair : out Natural)
       with Pre => Pairs'First = 1;
-   --  Shuffle Pairs to that, after the procedure returns:
+   --  Shuffle Pairs so that, after the procedure returns:
    --
    --  * Pairs (Pairs'First .. Last_Table_Pair) contains only table values;
    --  * Pairs (Last_Table_Pair + 1 .. Last_Array_Pair) contains only

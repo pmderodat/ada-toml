@@ -191,7 +191,7 @@ package TOML with Preelaborate is
    function Create_String (Value : Unbounded_UTF8_String) return TOML_Value
       with Post => Create_String'Result.Kind = TOML_String
                    and then Create_String'Result.As_Unbounded_String = Value;
-   --  Create a TOML string valeu
+   --  Create a TOML string value
 
    ---------------------
    -- Table modifiers --

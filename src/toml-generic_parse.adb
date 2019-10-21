@@ -1090,7 +1090,7 @@ is
 
                when others =>
                   --  If we end up here, either we found the beginning of a new
-                  --  toker, or a token separator: stop reading the integer
+                  --  token, or a token separator: stop reading the integer
                   --  right here.
 
                   Reemit_Codepoint;
