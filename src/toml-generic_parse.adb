@@ -1009,6 +1009,9 @@ is
       Had_Underscore : Boolean := False;
       --  Whether we found an underscore at all for this token
 
+      Leading_Zero : Boolean := False;
+      --  Whether this number starts with a zero
+
       Just_Passed_Underscore : Boolean := False;
       --  Whether the last codepoint processed was an underscore
 
@@ -1047,11 +1050,9 @@ is
          end if;
 
          case Codepoint_Buffer.Codepoint is
-            when '0' .. '9' =>
-               return Read_Local_Date (Base_Value => 0, Base_Digits => 1);
-
-            when '_' =>
-               return Create_Lexing_Error ("leading zeros not allowed");
+            when '_' | '0' .. '9' =>
+               Digit_Count := Digit_Count + 1;
+               Leading_Zero := True;
 
             when 'b' =>
                Format := Binary;
@@ -1071,14 +1072,16 @@ is
                return Create_Lexing_Error;
          end case;
 
-         --  At this point we just found which format to use: we can now start
-         --  to read the integer.
+         --  If we had a format specifier sequence, read the next codepoint,
+         --  which will be the first digit of the number to read.
 
-         if not Read_Codepoint then
-            return False;
-         elsif Codepoint_Buffer.EOF then
-            Reemit_Codepoint;
-            return True;
+         if Format /= Decimal then
+            if not Read_Codepoint then
+               return False;
+            elsif Codepoint_Buffer.EOF then
+               Reemit_Codepoint;
+               return True;
+            end if;
          end if;
       end if;
 
@@ -1121,10 +1124,13 @@ is
 
                when '-' =>
 
-                  --  If we had no underscore and no base specifier, we have a
-                  --  local date.
+                  --  If we had no sign, no underscore and no base specifier,
+                  --  we have a local date.
 
-                  if Format /= Decimal or else Had_Underscore then
+                  if Sign /= None
+                     or else Format /= Decimal
+                     or else Had_Underscore
+                  then
                      Reemit_Codepoint;
                      exit;
                   end if;
@@ -1173,6 +1179,13 @@ is
             end if;
          end;
       end loop;
+
+      --  If we reach this point, we know that the token is an integer (it's
+      --  not a date or something else).
+
+      if Leading_Zero then
+         return Create_Lexing_Error ("leading zeros are not allowed");
+      end if;
 
       --  Apply the sign, making sure that there is no overflow in the process
 
