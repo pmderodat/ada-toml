@@ -171,6 +171,12 @@ is
    --  Append the given codepoint to Token_Buffer.Token.String_Value (a UTF-8
    --  encoded string).
 
+   function Digit_Value
+     (Codepoint : Wide_Wide_Character) return Interfaces.Unsigned_64
+      with Pre => Codepoint in '0' .. '9' | 'a' .. 'f' | 'A' .. 'F';
+   --  Assuming that Codepoint is a valid hexadecimal digit, return the
+   --  corresponding number value.
+
    function Read_Unicode_Escape_Sequence
      (Location : Source_Location) return Boolean;
    --  Helper for Read_Quoted_String. Assuming that string parsing just read a
@@ -724,6 +730,29 @@ is
       end;
    end Append_As_UTF8;
 
+   -----------------
+   -- Digit_Value --
+   -----------------
+
+   function Digit_Value
+     (Codepoint : Wide_Wide_Character) return Interfaces.Unsigned_64
+   is
+      use Interfaces;
+      CP : constant Unsigned_64 :=
+         Wide_Wide_Character'Pos (Codepoint_Buffer.Codepoint);
+   begin
+      case Codepoint is
+         when '0' .. '9' =>
+            return CP - Wide_Wide_Character'Pos ('0');
+         when 'a' .. 'f' =>
+            return CP - Wide_Wide_Character'Pos ('a') + 10;
+         when 'A' .. 'F' =>
+            return CP - Wide_Wide_Character'Pos ('A') + 10;
+         when others =>
+            raise Program_Error;
+      end case;
+   end Digit_Value;
+
    ----------------------------------
    -- Read_Unicode_Escape_Sequence --
    ----------------------------------
@@ -1089,23 +1118,15 @@ is
 
       loop
          declare
-            Codepoint : constant Unsigned_64 := Wide_Wide_Character'Pos
-              (Codepoint_Buffer.Codepoint);
-            Is_Digit  : Boolean := False;
-            Digit     : Unsigned_64;
+            Is_Digit : Boolean := False;
+            Digit    : Unsigned_64;
          begin
             --  See if we have a digit
 
             case Codepoint_Buffer.Codepoint is
-               when '0' .. '9' =>
+               when '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' =>
                   Is_Digit := True;
-                  Digit := Codepoint - Wide_Wide_Character'Pos ('0');
-               when 'a' .. 'f' =>
-                  Is_Digit := True;
-                  Digit := Codepoint - Wide_Wide_Character'Pos ('a') + 10;
-               when 'A' .. 'F' =>
-                  Is_Digit := True;
-                  Digit := Codepoint - Wide_Wide_Character'Pos ('A') + 10;
+                  Digit := Digit_Value (Codepoint_Buffer.Codepoint);
 
                when '_' =>
                   Had_Underscore := True;
@@ -1225,6 +1246,8 @@ is
       Base_Digits : Natural;
       Value       : out Interfaces.Unsigned_64) return Boolean
    is
+      use Interfaces;
+
       function Create_Error return Boolean is
         (Create_Lexing_Error ("invalid " & What));
    begin
@@ -1242,13 +1265,7 @@ is
             return Create_Error;
          end if;
 
-         declare
-            use Interfaces;
-            Codepoint : constant Unsigned_64 :=
-               Wide_Wide_Character'Pos (Codepoint_Buffer.Codepoint);
-         begin
-            Value := 10 * Value + Codepoint - Wide_Wide_Character'Pos ('0');
-         end;
+         Value := 10 * Value + Digit_Value (Codepoint_Buffer.Codepoint);
 
          --  Read the next digit. We accept EOF only if we were able to read
          --  as many digits as requested.
