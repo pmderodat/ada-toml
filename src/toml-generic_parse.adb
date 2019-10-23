@@ -57,7 +57,8 @@ is
       Square_Bracket_Open, Square_Bracket_Close,
       Double_Square_Bracket_Open, Double_Square_Bracket_Close,
 
-      Boolean_Literal, Integer_Literal, String_Literal, Local_Date_Literal);
+      Boolean_Literal, Integer_Literal, String_Literal, Local_Date_Literal,
+      Local_Time_Literal);
 
    subtype No_Text_Token is Token_Kind range
       Newline ..  Double_Square_Bracket_Close;
@@ -71,6 +72,7 @@ is
          when Integer_Literal    => Integer_Value    : Any_Integer;
          when String_Literal     => String_Value     : Unbounded_UTF8_String;
          when Local_Date_Literal => Local_Date_Value : Any_Local_Date;
+         when Local_Time_Literal => Local_Time_Value : Any_Local_Time;
       end case;
    end record;
 
@@ -211,6 +213,13 @@ is
      (Base_Value : Interfaces.Unsigned_64; Base_Digits : Natural)
       return Boolean;
    --  Helper for Read_Number_Like. Read a local date, considering that we
+   --  already consumed Base_Digits digits, whose value is Base_Value. Return
+   --  whether successful, updating Token_Buffer accordingly.
+
+   function Read_Local_Time
+     (Base_Value : Interfaces.Unsigned_64; Base_Digits : Natural)
+      return Boolean;
+   --  Helper for Read_Number_Like. Read a local time, considering that we
    --  already consumed Base_Digits digits, whose value is Base_Value. Return
    --  whether successful, updating Token_Buffer accordingly.
 
@@ -1143,10 +1152,10 @@ is
                   --  error.
                   return Create_Lexing_Error;
 
-               when '-' =>
+               when '-' | ':' =>
 
                   --  If we had no sign, no underscore and no base specifier,
-                  --  we have a local date.
+                  --  we have a local date ('-') or local time (':').
 
                   if Sign /= None
                      or else Format /= Decimal
@@ -1156,7 +1165,11 @@ is
                      exit;
                   end if;
 
-                  return Read_Local_Date (Abs_Value, Digit_Count);
+                  if Codepoint_Buffer.Codepoint = '-' then
+                     return Read_Local_Date (Abs_Value, Digit_Count);
+                  else
+                     return Read_Local_Time (Abs_Value, Digit_Count);
+                  end if;
 
                when others =>
                   --  If we end up here, either we found the beginning of a new
@@ -1369,6 +1382,116 @@ is
                               Day   => Any_Day (Day)));
       return True;
    end Read_Local_Date;
+
+   ---------------------
+   -- Read_Local_Time --
+   ---------------------
+
+   function Read_Local_Time
+     (Base_Value : Interfaces.Unsigned_64; Base_Digits : Natural)
+      return Boolean
+   is
+      use Interfaces;
+
+      subtype Hour_Range is Unsigned_64 range
+         Unsigned_64 (Any_Hour'First) .. Unsigned_64 (Any_Hour'Last);
+      subtype Minute_Range is Unsigned_64 range
+         Unsigned_64 (Any_Minute'First) .. Unsigned_64 (Any_Minute'Last);
+      subtype Second_Range is Unsigned_64 range
+         Unsigned_64 (Any_Second'First) .. Unsigned_64 (Any_Second'Last);
+      subtype Millisecond_Range is Unsigned_64 range
+         Unsigned_64 (Any_Millisecond'First)
+         .. Unsigned_64 (Any_Millisecond'Last);
+
+      Hour, Minute, Second, Millisecond : Unsigned_64 := Base_Value;
+   begin
+      --  Finish reading the hour and consume the following colon
+
+      if not Read_Datetime_Field ("hour", 2, Base_Value, Base_Digits, Hour)
+      then
+         return False;
+      elsif Codepoint_Buffer.EOF or else Codepoint_Buffer.Codepoint /= ':' then
+         return Create_Lexing_Error ("invalid hour");
+      end if;
+
+      --  Now read the minute and consume the following colon
+
+      if not Read_Codepoint then
+         return False;
+      elsif Codepoint_Buffer.EOF then
+         return Create_Lexing_Error ("invalid minute");
+      elsif not Read_Datetime_Field ("minute", 2, 0, 0, Minute) then
+         return False;
+      elsif Codepoint_Buffer.EOF or else Codepoint_Buffer.Codepoint /= ':' then
+         return Create_Lexing_Error ("invalid minute");
+      end if;
+
+      --  Now read the second
+
+      if not Read_Codepoint then
+         return False;
+      elsif Codepoint_Buffer.EOF then
+         return Create_Lexing_Error ("invalid second");
+      elsif not Read_Datetime_Field ("second", 2, 0, 0, Second) then
+         return False;
+      end if;
+
+      --  If present, read a dot, and then read the millisecond
+
+      Millisecond := 0;
+      if Codepoint_Buffer.EOF or else Codepoint_Buffer.Codepoint /= '.' then
+         Reemit_Codepoint;
+      elsif not Read_Codepoint then
+         return False;
+      elsif Codepoint_Buffer.EOF then
+         return Create_Lexing_Error ("truncated millisecond");
+      else
+         --  Read at least 1 digit and at most 3 digits, then discard other
+         --  digits.
+
+         declare
+            Digit_Count : Natural := 0;
+         begin
+            while not Codepoint_Buffer.EOF
+                  and then Codepoint_Buffer.Codepoint in '0' .. '9'
+            loop
+               if Digit_Count < 3 then
+                  Digit_Count := Digit_Count + 1;
+                  Millisecond := (10 * Millisecond
+                                  + Digit_Value (Codepoint_Buffer.Codepoint));
+               end if;
+
+               if not Read_Codepoint then
+                  return False;
+               end if;
+            end loop;
+            Reemit_Codepoint;
+         end;
+      end if;
+
+      --  Check that all fields are in range
+
+      if Hour not in Hour_Range then
+         return Create_Lexing_Error ("out of range hour");
+      elsif Minute not in Minute_Range then
+         return Create_Lexing_Error ("out of range minute");
+      elsif Second not in Second_Range then
+         return Create_Lexing_Error ("out of range second");
+      end if;
+
+      --  The millisecond is read with 3 digits, and that's exactly what the
+      --  millisecond range allows so this should be always true.
+
+      pragma Assert (Millisecond in Millisecond_Range);
+
+      Token_Buffer.Token :=
+        (Kind             => Local_Time_Literal,
+         Local_Time_Value => (Hour        => Any_Hour (Hour),
+                              Minute      => Any_Minute (Minute),
+                              Second      => Any_Second (Second),
+                              Millisecond => Any_Millisecond (Millisecond)));
+      return True;
+   end Read_Local_Time;
 
    -------------------
    -- Read_Bare_Key --
@@ -1685,6 +1808,9 @@ is
 
          when Local_Date_Literal =>
             Value := Create_Local_Date (Token_Buffer.Token.Local_Date_Value);
+
+         when Local_Time_Literal =>
+            Value := Create_Local_Time (Token_Buffer.Token.Local_Time_Value);
 
          when Square_Bracket_Open =>
             return Parse_Array (Value);

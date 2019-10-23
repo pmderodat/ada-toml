@@ -158,6 +158,27 @@ procedure Ada_TOML_Encode is
                                TOML.Any_Day'Value (Day)));
                         end;
 
+                     elsif T = "time" then
+                        declare
+                           S : constant String := V.Get;
+                           I : constant Positive := S'First;
+
+                           pragma Assert (S'Length = 12);
+                           pragma Assert (S (I + 2) = ':');
+                           pragma Assert (S (I + 5) = ':');
+
+                           Hour        : String renames S (I + 0 .. I + 1);
+                           Minute      : String renames S (I + 3 .. I + 4);
+                           Second      : String renames S (I + 6 .. I + 7);
+                           Millisecond : String renames S (I + 9 .. I + 11);
+                        begin
+                           Result := TOML.Create_Local_Time
+                             ((TOML.Any_Hour'Value (Hour),
+                               TOML.Any_Minute'Value (Minute),
+                               TOML.Any_Second'Value (Second),
+                               TOML.Any_Millisecond'Value (Millisecond)));
+                        end;
+
                      elsif T = "array" then
                         Result := Interpret (V);
 

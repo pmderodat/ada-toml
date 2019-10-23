@@ -32,7 +32,7 @@ procedure Ada_TOML_Decode is
    subtype Wrapped_Kind is TOML.Any_Value_Kind
       with Static_Predicate =>
          Wrapped_Kind in TOML.TOML_Array .. TOML.TOML_Boolean
-                       | TOML.TOML_Local_Date;
+                       | TOML.TOML_Local_Date | TOML.TOML_Local_Time;
    --  TODO: handle other kinds
 
    function Kind_Name (Kind : Wrapped_Kind) return String;
@@ -69,7 +69,8 @@ procedure Ada_TOML_Decode is
               when TOML.TOML_Integer    => "integer",
               when TOML.TOML_Float      => "float",
               when TOML.TOML_Boolean    => "bool",
-              when TOML.TOML_Local_Date => "date");
+              when TOML.TOML_Local_Date => "date",
+              when TOML.TOML_Local_Time => "time");
    end Kind_Name;
 
    ------------------
@@ -232,6 +233,17 @@ procedure Ada_TOML_Decode is
                   IO.Put_Line ("""" & Pad_Number (V.Year'Image, 4)
                                & "-" & Pad_Number (V.Month'Image, 2)
                                & "-" & Pad_Number (V.Day'Image, 2) & """");
+               end;
+
+            when TOML_Local_Time =>
+               declare
+                  V : constant TOML.Any_Local_Time := Value.As_Local_Time;
+               begin
+                  IO.Put_Line ("""" & Pad_Number (V.Hour'Image, 2)
+                               & ":" & Pad_Number (V.Minute'Image, 2)
+                               & ":" & Pad_Number (V.Second'Image, 2)
+                               & "." & Pad_Number (V.Millisecond'Image, 3)
+                               & """");
                end;
          end case;
          IO.Put_Line ("}");

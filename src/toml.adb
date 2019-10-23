@@ -64,7 +64,8 @@ package body TOML is
          when TOML_Local_Date =>
             Local_Date_Value : Any_Local_Date;
 
-         when TOML_Local_Time => null;
+         when TOML_Local_Time =>
+            Local_Time_Value : Any_Local_Time;
       end case;
    end record;
 
@@ -178,10 +179,12 @@ package body TOML is
          when TOML_Local_Date =>
             return Left.Value.Local_Date_Value = Right.Value.Local_Date_Value;
 
+         when TOML_Local_Time =>
+            return Left.Value.Local_Time_Value = Right.Value.Local_Time_Value;
+
          when TOML_Float
             | TOML_Offset_Date_Time
             | TOML_Local_Date_Time
-            | TOML_Local_Time
          =>
             raise Program_Error;
       end case;
@@ -221,10 +224,12 @@ package body TOML is
          when TOML_Local_Date =>
             Result := Create_Local_Date (Value.Value.Local_Date_Value);
 
+         when TOML_Local_Time =>
+            Result := Create_Local_Time (Value.Value.Local_Time_Value);
+
          when TOML_Float
             | TOML_Offset_Date_Time
             | TOML_Local_Date_Time
-            | TOML_Local_Time
          =>
             raise Program_Error;
       end case;
@@ -277,6 +282,15 @@ package body TOML is
    begin
       return Value.Value.Local_Date_Value;
    end As_Local_Date;
+
+   -------------------
+   -- As_Local_Time --
+   -------------------
+
+   function As_Local_Time (Value : TOML_Value) return Any_Local_Time is
+   begin
+      return Value.Value.Local_Time_Value;
+   end As_Local_Time;
 
    ---------
    -- Has --
@@ -461,6 +475,18 @@ package body TOML is
          Ref_Count        => 1,
          Local_Date_Value => Value));
    end Create_Local_Date;
+
+   -----------------------
+   -- Create_Local_Time --
+   -----------------------
+
+   function Create_Local_Time (Value : Any_Local_Time) return TOML_Value is
+   begin
+      return Create_Value (new TOML_Value_Record'
+        (Kind             => TOML_Local_Time,
+         Ref_Count        => 1,
+         Local_Time_Value => Value));
+   end Create_Local_Time;
 
    ------------------
    -- Create_Table --

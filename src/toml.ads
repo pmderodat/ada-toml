@@ -51,6 +51,18 @@ package TOML with Preelaborate is
       Day   : Any_Day;
    end record;
 
+   type Any_Hour is range 0 .. 23;
+   type Any_Minute is range 0 .. 59;
+   type Any_Second is range 0 .. 60;
+   type Any_Millisecond is range 0 .. 999;
+
+   type Any_Local_Time is record
+      Hour        : Any_Hour;
+      Minute      : Any_Minute;
+      Second      : Any_Second;
+      Millisecond : Any_Millisecond;
+   end record;
+
    -----------------------
    -- Generic accessors --
    -----------------------
@@ -101,6 +113,10 @@ package TOML with Preelaborate is
    function As_Local_Date (Value : TOML_Value) return Any_Local_Date
       with Pre => Value.Kind = TOML_Local_Date;
    --  Return the local date that Value represents
+
+   function As_Local_Time (Value : TOML_Value) return Any_Local_Time
+      with Pre => Value.Kind = TOML_Local_Time;
+   --  Return the local time that Value represents
 
    ---------------------
    -- Table accessors --
@@ -210,6 +226,11 @@ package TOML with Preelaborate is
    function Create_Local_Date (Value : Any_Local_Date) return TOML_Value
       with Post => Create_Local_Date'Result.Kind = TOML_Local_Date
                    and then Create_Local_Date'Result.As_Local_Date = Value;
+   --  Create a TOML local date value
+
+   function Create_Local_Time (Value : Any_Local_Time) return TOML_Value
+      with Post => Create_Local_Time'Result.Kind = TOML_Local_Time
+                   and then Create_Local_Time'Result.As_Local_Time = Value;
    --  Create a TOML local date value
 
    ---------------------

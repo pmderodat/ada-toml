@@ -2,5 +2,23 @@ driver: decoder
 output: {
     "d1": {"type": "date", "value": "0000-01-01"},
     "d2": {"type": "date", "value": "9999-12-31"},
-    "d3": {"type": "date", "value": "1970-02-28"}
+    "d3": {"type": "date", "value": "1970-02-28"},
+
+    "t1": {"type": "time", "value": "00:00:00.000"},
+
+    "t2": {"type": "time", "value": "00:00:00.000"},
+    "t3": {"type": "time", "value": "00:00:00.100"},
+
+    "t4": {"type": "time", "value": "00:00:00.000"},
+    "t5": {"type": "time", "value": "00:00:00.010"},
+    "t6": {"type": "time", "value": "00:00:00.100"},
+
+    "t7": {"type": "time", "value": "00:00:00.000"},
+    "t8": {"type": "time", "value": "00:00:00.001"},
+    "t9": {"type": "time", "value": "00:00:00.010"},
+    "t10": {"type": "time", "value": "00:00:00.100"},
+
+    "t11": {"type": "time", "value": "00:00:01.000"},
+    "t12": {"type": "time", "value": "23:56:60.999"},
+    "t13": {"type": "time", "value": "23:56:60.999"}
 }

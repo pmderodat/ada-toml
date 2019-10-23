@@ -411,6 +411,16 @@ is
                     & "-" & Pad_Number (V.Day'Image, 2));
             end;
 
+         when TOML_Local_Time =>
+            declare
+               V : constant TOML.Any_Local_Time := Value.As_Local_Time;
+            begin
+               Put (Pad_Number (V.Hour'Image, 2)
+                    & ":" & Pad_Number (V.Minute'Image, 2)
+                    & ":" & Pad_Number (V.Second'Image, 2)
+                    & "." & Pad_Number (V.Millisecond'Image, 3));
+            end;
+
          when TOML_Array =>
             Put ("[" & ASCII.LF);
             for I in 1 .. Value.Length loop
