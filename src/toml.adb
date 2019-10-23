@@ -58,8 +58,8 @@ package body TOML is
          when TOML_Boolean =>
             Boolean_Value : Boolean;
 
-         when TOML_Offset_Date_Time => null;
-         when TOML_Local_Date_Time => null;
+         when TOML_Offset_Datetime => null;
+         when TOML_Local_Datetime => null;
 
          when TOML_Local_Date =>
             Local_Date_Value : Any_Local_Date;
@@ -183,8 +183,8 @@ package body TOML is
             return Left.Value.Local_Time_Value = Right.Value.Local_Time_Value;
 
          when TOML_Float
-            | TOML_Offset_Date_Time
-            | TOML_Local_Date_Time
+            | TOML_Offset_Datetime
+            | TOML_Local_Datetime
          =>
             raise Program_Error;
       end case;
@@ -228,8 +228,8 @@ package body TOML is
             Result := Create_Local_Time (Value.Value.Local_Time_Value);
 
          when TOML_Float
-            | TOML_Offset_Date_Time
-            | TOML_Local_Date_Time
+            | TOML_Offset_Datetime
+            | TOML_Local_Datetime
          =>
             raise Program_Error;
       end case;

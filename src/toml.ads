@@ -18,8 +18,8 @@ package TOML with Preelaborate is
       TOML_Integer,
       TOML_Float,
       TOML_Boolean,
-      TOML_Offset_Date_Time,
-      TOML_Local_Date_Time,
+      TOML_Offset_Datetime,
+      TOML_Local_Datetime,
       TOML_Local_Date,
       TOML_Local_Time);
 
