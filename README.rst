@@ -2,14 +2,10 @@ ada-toml: TOML parser for Ada
 =============================
 
 ``ada-toml`` is a pure Ada library for parsing and creating `TOML
-<https://github.com/toml-lang/toml#toml>`_ documents.
-
-
-Status
-------
-
-The development of this library started recently and it currently lacks several
-important features, mainly: support for floating-point and date/time values.
+<https://github.com/toml-lang/toml#toml>`_ documents. It conforms to the
+`version 0.5.0
+<https://github.com/toml-lang/toml/blob/master/versions/en/toml-v0.5.0.md#toml-v050>`_
+of the format standard.
 
 
 Build and install

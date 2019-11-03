@@ -9,6 +9,9 @@ package TOML with Preelaborate is
    use type Ada.Strings.Unbounded.Unbounded_String;
    pragma Warnings (On);
 
+   Version : constant String := "0.1";
+   --  Version for the ada-toml project
+
    subtype Unbounded_UTF8_String is Ada.Strings.Unbounded.Unbounded_String;
 
    type Any_Value_Kind is
