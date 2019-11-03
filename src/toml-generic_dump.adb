@@ -428,6 +428,19 @@ is
          when TOML_Integer =>
             Put (Strip_Number (Any_Integer'Image (Value.As_Integer)));
 
+         when TOML_Float =>
+            declare
+               V : constant Any_Float := Value.As_Float;
+            begin
+               case V.Kind is
+                  when Regular =>
+                     Put (Strip_Number (V.Value'Image));
+                  when NaN | Infinity =>
+                     Put (if V.Positive then "" else "-");
+                     Put (if V.Kind = NaN then "nan" else "inf");
+               end case;
+            end;
+
          when TOML_String =>
             --  TODO: escape strings when needed
 

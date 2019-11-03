@@ -1,0 +1,4 @@
+driver: decoder
+output: {
+    "f": {"type": "float", "value": "0.0"}
+}

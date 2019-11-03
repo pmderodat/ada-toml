@@ -1,0 +1,12 @@
+f1 = nan
+f2 = +nan
+f3 = -nan
+
+f4 = inf
+f5 = +inf
+f6 = -inf
+
+f7 = 0.0
+f8 = 0e0
+f9 = 1.2e3
+f10 = 1_2.3_4_5e6_7

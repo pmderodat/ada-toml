@@ -194,7 +194,7 @@ package body TOML is
             return Left.Value.Local_Time_Value = Right.Value.Local_Time_Value;
 
          when TOML_Float =>
-            raise Program_Error;
+            return Left.Value.Float_Value = Right.Value.Float_Value;
       end case;
 
       return True;
@@ -243,7 +243,7 @@ package body TOML is
             Result := Create_Local_Time (Value.Value.Local_Time_Value);
 
          when TOML_Float =>
-            raise Program_Error;
+            Result := Create_Float (Value.Value.Float_Value);
       end case;
 
       return Result;
@@ -266,6 +266,15 @@ package body TOML is
    begin
       return Value.Value.Integer_Value;
    end As_Integer;
+
+   --------------
+   -- As_Float --
+   --------------
+
+   function As_Float (Value : TOML_Value) return Any_Float is
+   begin
+      return Value.Value.Float_Value;
+   end As_Float;
 
    ---------------
    -- As_String --
@@ -473,6 +482,16 @@ package body TOML is
       return Create_Value (new TOML_Value_Record'
         (Kind => TOML_Integer, Ref_Count => 1, Integer_Value => Value));
    end Create_Integer;
+
+   ------------------
+   -- Create_Float --
+   ------------------
+
+   function Create_Float (Value : Any_Float) return TOML_Value is
+   begin
+      return Create_Value (new TOML_Value_Record'
+        (Kind => TOML_Float, Ref_Count => 1, Float_Value => Value));
+   end Create_Float;
 
    -------------------
    -- Create_String --

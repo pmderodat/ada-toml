@@ -38,8 +38,21 @@ package TOML with Preelaborate is
    --  TOML supports any integer that can be encoded in a 64-bit signed
    --  integer.
 
-   type Any_Float is new Interfaces.IEEE_Float_64;
-   --  TOML advises to implement its float values as IEEE 754 binary64 values
+   type Valid_Float is new Interfaces.IEEE_Float_64;
+   type Float_Kind is (Regular, NaN, Infinity);
+   subtype Special_Float_Kind is Float_Kind range NaN .. Infinity;
+   type Any_Float (Kind : Float_Kind := Regular) is record
+      case Kind is
+         when Regular =>
+            Value : Valid_Float;
+         when Special_Float_Kind =>
+            Positive : Boolean;
+      end case;
+   end record;
+   --  TOML advises to implement its float values as IEEE 754 binary64 values,
+   --  however Ada does not provide a standard way to represent infinities and
+   --  NaN (Not a Number), so fallback to a discriminated record to reliably
+   --  represent TOML float.
 
    type Any_Year is range 1 .. 9999;
    type Any_Month is range 1 .. 12;
@@ -117,6 +130,10 @@ package TOML with Preelaborate is
    function As_Integer (Value : TOML_Value) return Any_Integer
       with Pre => Value.Kind = TOML_Integer;
    --  Return the integer that Value represents
+
+   function As_Float (Value : TOML_Value) return Any_Float
+      with Pre => Value.Kind = TOML_Float;
+   --  Return the float that Value represents
 
    function As_String (Value : TOML_Value) return String
       with Pre => Value.Kind = TOML_String;
@@ -236,6 +253,11 @@ package TOML with Preelaborate is
    function Create_Integer (Value : Any_Integer) return TOML_Value
       with Post => Create_Integer'Result.Kind = TOML_Integer
                    and then Create_Integer'Result.As_Integer = Value;
+   --  Create a TOML integer value
+
+   function Create_Float (Value : Any_Float) return TOML_Value
+      with Post => Create_Float'Result.Kind = TOML_Float
+                   and then Create_Float'Result.As_Float = Value;
    --  Create a TOML integer value
 
    function Create_String (Value : String) return TOML_Value

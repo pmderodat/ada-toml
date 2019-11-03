@@ -57,7 +57,7 @@ is
       Square_Bracket_Open, Square_Bracket_Close,
       Double_Square_Bracket_Open, Double_Square_Bracket_Close,
 
-      Boolean_Literal, Integer_Literal, String_Literal,
+      Boolean_Literal, Integer_Literal, Float_Literal, String_Literal,
       Offset_Datetime_Literal, Local_Datetime_Literal,
       Local_Date_Literal, Local_Time_Literal);
 
@@ -71,6 +71,7 @@ is
          when No_Text_Token          => null;
          when Boolean_Literal        => Boolean_Value : Boolean;
          when Integer_Literal        => Integer_Value : Any_Integer;
+         when Float_Literal          => Float_Value   : Any_Float;
          when String_Literal         => String_Value  : Unbounded_UTF8_String;
          when Offset_Datetime_Literal =>
             Offset_Datetime_Value : Any_Offset_Datetime;
@@ -236,6 +237,21 @@ is
    --  (Local_Date_Literal) and update it to contain either an
    --  Offset_Datetime_Literal variant (if there is a timezone) or a
    --  Local_Datetime_Literal variant.
+
+   function Read_Float
+     (Positive      : Boolean;
+      Integer_Value : Interfaces.Unsigned_64) return Boolean;
+   --  Helper for Read_Number_Like. Read a floating point number considering
+   --  that we already consumed its sign (Positive) and its integer part
+   --  (Integer_Part): the codepoint buffer must contain one of '.' | 'e' |
+   --  'E'. Return whether successful, updating Token_Buffer accordingly.
+
+   function Read_Special_Float
+     (Name     : Wide_Wide_String;
+      Kind     : Special_Float_Kind;
+      Positive : Boolean) return Boolean;
+   --  Helper for Read_Number_Like. Read the name of a special floating point
+   --  number. Return whether successful, updating Token_Buffer accordingly.
 
    function Read_Bare_Key return Boolean;
    --  Helper for Read_Token. Read a bare key, whose first character is in
@@ -668,6 +684,10 @@ is
                      return Read_Keyword ("false", False_Keyword);
                   when 't' =>
                      return Read_Keyword ("true", True_Keyword);
+                  when 'n' =>
+                     return Read_Special_Float ("nan", NaN, True);
+                  when 'i' =>
+                     return Read_Special_Float ("inf", Infinity, True);
                   when others =>
                      return Create_Lexing_Error;
                end case;
@@ -1067,6 +1087,39 @@ is
       Just_Passed_Underscore : Boolean := False;
       --  Whether the last codepoint processed was an underscore
 
+      function Reject_Leading_Zero return Boolean;
+      --  If Leading_Zero is true, create an error and return False. Return
+      --  true otherwise.
+
+      function Reject_Passed_Underscore return Boolean;
+      --  If Just_Passed_Underscore is true, create an error and return False.
+      --  Return true otherwise.
+
+      -------------------------
+      -- Reject_Leading_Zero --
+      -------------------------
+
+      function Reject_Leading_Zero return Boolean is
+      begin
+         if Leading_Zero then
+            return Create_Lexing_Error ("leading zeros are not allowed");
+         end if;
+         return True;
+      end Reject_Leading_Zero;
+
+      ------------------------------
+      -- Reject_Passed_Underscore --
+      ------------------------------
+
+      function Reject_Passed_Underscore return Boolean is
+      begin
+         if Just_Passed_Underscore then
+            return Create_Lexing_Error
+              ("underscores must be surrounded by digits");
+         end if;
+         return True;
+      end Reject_Passed_Underscore;
+
       function Too_Large_Error return Boolean is
         (Create_Error ("too large integer", Token_Buffer.Location));
    begin
@@ -1120,6 +1173,9 @@ is
                Reemit_Codepoint;
                return True;
 
+            when '.' | 'e' | 'E' =>
+               return Read_Float (Sign /= Negative, Abs_Value);
+
             when others =>
                return Create_Lexing_Error;
          end case;
@@ -1135,6 +1191,13 @@ is
                return True;
             end if;
          end if;
+
+      --  Check for special float values ("nan" and "inf")
+
+      elsif Codepoint_Buffer.Codepoint = 'n' then
+         return Read_Special_Float ("nan", NaN, Sign /= Negative);
+      elsif Codepoint_Buffer.Codepoint = 'i' then
+         return Read_Special_Float ("inf", Infinity, Sign /= Negative);
       end if;
 
       --  Now read and decode all digits for this token
@@ -1148,22 +1211,31 @@ is
 
             case Codepoint_Buffer.Codepoint is
                when '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' =>
+                  if Format = Decimal
+                     and then Codepoint_Buffer.Codepoint in 'e' | 'E'
+                  then
+                     return Reject_Leading_Zero and then
+                            Reject_Passed_Underscore and then
+                            Read_Float (Sign /= Negative, Abs_Value);
+                  end if;
+
                   Is_Digit := True;
                   Digit := Digit_Value (Codepoint_Buffer.Codepoint);
 
                when '_' =>
                   Had_Underscore := True;
                   if Just_Passed_Underscore then
-                     return Create_Lexing_Error
-                       ("underscores must be surrounded by digits");
+                     return Reject_Passed_Underscore;
                   else
                      Just_Passed_Underscore := True;
                   end if;
 
                when 'g' .. 'z' | 'G' .. 'Z' | WW_Non_ASCII =>
+
                   --  These codepoints cannot start a new token and yet they
                   --  are invalid elements for integer literals: this is an
                   --  error.
+
                   return Create_Lexing_Error;
 
                when '-' | ':' =>
@@ -1185,6 +1257,18 @@ is
                      return Read_Local_Time (Abs_Value, Digit_Count,
                                              Read_Timezone => False);
                   end if;
+
+               when '.' =>
+
+                  --  If we had no base specifier, we have a floating point
+                  --  number.
+
+                  if Format /= Decimal then
+                     return Create_Lexing_Error ("invalid float");
+                  end if;
+                  return Reject_Leading_Zero and then
+                         Reject_Passed_Underscore and then
+                         Read_Float (Sign /= Negative, Abs_Value);
 
                when others =>
                   --  If we end up here, either we found the beginning of a new
@@ -1232,8 +1316,8 @@ is
       --  If we reach this point, we know that the token is an integer (it's
       --  not a date or something else).
 
-      if Leading_Zero then
-         return Create_Lexing_Error ("leading zeros are not allowed");
+      if not Reject_Leading_Zero then
+         return False;
       end if;
 
       --  Apply the sign, making sure that there is no overflow in the process
@@ -1651,6 +1735,214 @@ is
       end;
    end Read_Local_Time;
 
+   ----------------
+   -- Read_Float --
+   ----------------
+
+   function Read_Float
+     (Positive      : Boolean;
+      Integer_Value : Interfaces.Unsigned_64) return Boolean
+   is
+      function Invalid_Float return Boolean is
+        (Create_Lexing_Error ("invalid float"));
+      function Too_Large return Boolean is
+        (Create_Lexing_Error ("too large float"));
+
+      function Read_Simple_Integer
+        (Value : out Interfaces.Unsigned_64) return Boolean
+         with Pre => not Codepoint_Buffer.EOF;
+      --  Helper to read a simple decimal integer, including underscores
+
+      -------------------------
+      -- Read_Simple_Integer --
+      -------------------------
+
+      function Read_Simple_Integer
+        (Value : out Interfaces.Unsigned_64) return Boolean
+      is
+         use type Interfaces.Unsigned_64;
+
+         Empty : Boolean := True;
+         --  Whether we read no digit so far
+
+         Previous_Is_Underscore : Boolean := True;
+         --  Given that it is forbidden to have a leading underscore, do as if
+         --  we just had an underscore at the beginning so that we need to
+         --  check only for consecutive underscores.
+      begin
+         Value := 0;
+
+         --  Read and decode all digits that follow in the stream
+
+         while not Codepoint_Buffer.EOF
+               and then Codepoint_Buffer.Codepoint in '0' .. '9' | '_'
+         loop
+            --  Discard underscores, yet do not allow consecutive ones
+
+            if Codepoint_Buffer.Codepoint = '_' then
+               if Previous_Is_Underscore then
+                  return Invalid_Float;
+               else
+                  Previous_Is_Underscore := True;
+               end if;
+
+            --  Decode digits to build Value as we go. Consider the number too
+            --  large as soon as it is bigger than half the largest possible
+            --  unsigned 64 value: bigger numbers are unlikely and this allows
+            --  us to negate values safely later on.
+
+            else
+               begin
+                  Value :=
+                     10 * Value + Digit_Value (Codepoint_Buffer.Codepoint);
+
+                  if Value > Interfaces.Unsigned_64'Last / 2 then
+                     return Too_Large;
+                  end if;
+
+               exception
+                  when Constraint_Error =>
+                     return Too_Large;
+               end;
+               Empty := False;
+               Previous_Is_Underscore := False;
+            end if;
+
+            if not Read_Codepoint then
+               return Invalid_Float;
+            end if;
+         end loop;
+
+         --  We expect at least one digit, and the last codepoint must not be
+         --  an underscore.
+
+         if Empty or else Previous_Is_Underscore then
+            return Invalid_Float;
+         else
+            return True;
+         end if;
+      end Read_Simple_Integer;
+
+      Fractional_Value  : Interfaces.Unsigned_64 := 0;
+      Exponent          : Interfaces.Unsigned_64 := 0;
+      Exponent_Positive : Boolean := False;
+      Result            : Any_Float (Regular);
+   begin
+      --  Read the fractional part, if present
+
+      if Codepoint_Buffer.Codepoint = '.' then
+         if not Read_Codepoint then
+            return False;
+         elsif Codepoint_Buffer.EOF then
+            return Invalid_Float;
+         elsif not Read_Simple_Integer (Fractional_Value) then
+            return False;
+         end if;
+      end if;
+
+      --  Read the exponent, if present
+
+      if not Codepoint_Buffer.EOF
+         and then Codepoint_Buffer.Codepoint in 'e' | 'E'
+      then
+         if not Read_Codepoint then
+            return False;
+         elsif Codepoint_Buffer.EOF then
+            return Invalid_Float;
+         end if;
+
+         --  First read the sign
+
+         if Codepoint_Buffer.Codepoint in '+' | '-' then
+            Exponent_Positive := Codepoint_Buffer.Codepoint /= '-';
+            if not Read_Codepoint then
+               return False;
+            elsif Codepoint_Buffer.EOF then
+               return Invalid_Float;
+            end if;
+         end if;
+
+         --  Then the exponent absolute value
+
+         if not Read_Simple_Integer (Exponent) then
+            return False;
+         end if;
+      end if;
+
+      --  Reemit the last codepoint: it is not part of the float token and the
+      --  next token reading iteration needs to read it.
+
+      Reemit_Codepoint;
+
+      --  Use all lexed parts to create a floating point value
+
+      declare
+         function Image
+           (Positive : Boolean; Value : Interfaces.Unsigned_64) return String;
+
+         -----------
+         -- Image --
+         -----------
+
+         function Image
+           (Positive : Boolean; Value : Interfaces.Unsigned_64) return String
+         is
+            Result   : constant String := Value'Image;
+            Stripped : String renames Result (Result'First + 1 .. Result'Last);
+            pragma Assert (Result (Result'First) = ' ');
+         begin
+            return (if Positive
+                    then Stripped
+                    else "-" & Stripped);
+         end Image;
+
+         Value_Image : constant String :=
+            Image (Positive, Integer_Value)
+            & "." & Image (True, Fractional_Value)
+            & "e" & Image (Exponent_Positive, Exponent);
+      begin
+         Result.Value := Valid_Float'Value (Value_Image);
+      exception
+         when Constraint_Error =>
+            return Too_Large;
+      end;
+      Token_Buffer.Token := (Kind => Float_Literal, Float_Value => Result);
+      return True;
+   end Read_Float;
+
+   ------------------------
+   -- Read_Special_Float --
+   ------------------------
+
+   function Read_Special_Float
+     (Name     : Wide_Wide_String;
+      Kind     : Special_Float_Kind;
+      Positive : Boolean) return Boolean
+   is
+      function Invalid_Float return Boolean is
+        (Create_Lexing_Error ("invalid float"));
+   begin
+      pragma Assert (Codepoint_Buffer.Codepoint = Name (Name'First));
+
+      for C of Name (Name'First + 1 .. Name'Last) loop
+         if not Read_Codepoint then
+            return False;
+         elsif Codepoint_Buffer.EOF
+            or else Codepoint_Buffer.Codepoint /= C
+         then
+            return Invalid_Float;
+         end if;
+      end loop;
+
+      declare
+         Value : Any_Float (Kind);
+      begin
+         Value.Positive := Positive;
+         Token_Buffer.Token := (Kind => Float_Literal, Float_Value => Value);
+      end;
+      return True;
+   end Read_Special_Float;
+
    -------------------
    -- Read_Bare_Key --
    -------------------
@@ -1960,6 +2252,9 @@ is
 
          when Integer_Literal =>
             Value := Create_Integer (Token_Buffer.Token.Integer_Value);
+
+         when Float_Literal =>
+            Value := Create_Float (Token_Buffer.Token.Float_Value);
 
          when String_Literal =>
             Value := Create_String (Token_Buffer.Token.String_Value);

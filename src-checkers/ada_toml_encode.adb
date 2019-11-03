@@ -232,6 +232,42 @@ procedure Ada_TOML_Encode is
                            Result := TOML.Create_String (S);
                         end;
 
+                     elsif T = "float" then
+                        declare
+                           S        : constant String := V.Get;
+                           I        : Positive := S'First;
+                           Positive : Boolean := True;
+                           Value    : TOML.Any_Float;
+                        begin
+                           if S (I) = '+' then
+                              I := I + 1;
+                           elsif S (I) = '-' then
+                              Positive := False;
+                              I := I + 1;
+                           end if;
+
+                           if S (I .. S'Last) = "nan" then
+                              Value := (Kind     => TOML.NaN,
+                                        Positive => Positive);
+                           elsif S (I .. S'Last) = "inf" then
+                              Value := (Kind     => TOML.Infinity,
+                                        Positive => Positive);
+                           else
+                              declare
+                                 use type TOML.Valid_Float;
+                                 VF : TOML.Valid_Float :=
+                                    TOML.Valid_Float'Value (S (I .. S'Last));
+                              begin
+                                 if not Positive then
+                                    VF := -VF;
+                                 end if;
+                                 Value := (Kind => TOML.Regular, Value => VF);
+                              end;
+                           end if;
+
+                           Result := TOML.Create_Float (Value);
+                        end;
+
                      elsif T = "integer" then
                         declare
                            S : constant String := V.Get;

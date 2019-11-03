@@ -33,8 +33,8 @@ procedure Ada_TOML_Decode is
       with Static_Predicate =>
          Wrapped_Kind in TOML.TOML_Array .. TOML.TOML_Boolean
                        | TOML.TOML_Offset_Datetime | TOML.TOML_Local_Datetime
-                       | TOML.TOML_Local_Date | TOML.TOML_Local_Time;
-   --  TODO: handle other kinds
+                       | TOML.TOML_Local_Date | TOML.TOML_Local_Time
+                       | TOML.TOML_Float;
 
    function Kind_Name (Kind : Wrapped_Kind) return String;
    --  Return the name expected in the JSON output for the given kind
@@ -250,8 +250,23 @@ procedure Ada_TOML_Decode is
                IO.Put_Line ("""" & Strip_Number (Value.As_Integer'Image)
                             & """");
 
-            when TOML_Float   =>
-               raise Program_Error with "unimplemented";
+            when TOML_Float =>
+               declare
+                  V : constant TOML.Any_Float := Value.As_Float;
+               begin
+                  IO.Put ("""");
+                  case V.Kind is
+                     when TOML.Regular =>
+                        IO.Put (Strip_Number (V.Value'Image));
+                     when TOML.NaN =>
+                        IO.Put (if V.Positive then "+" else "-");
+                        IO.Put ("nan");
+                     when TOML.Infinity =>
+                        IO.Put (if V.Positive then "+" else "-");
+                        IO.Put ("inf");
+                  end case;
+                  IO.Put_Line ("""");
+               end;
 
             when TOML_Boolean =>
                if Value.As_Boolean then
