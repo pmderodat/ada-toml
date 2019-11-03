@@ -102,6 +102,67 @@ procedure Ada_TOML_Encode is
    ---------------
 
    function Interpret (Desc : J.JSON_Value) return TOML.TOML_Value is
+
+      function Decode_Datetime (S : String) return TOML.Any_Local_Datetime;
+      function Decode_Date (S : String) return TOML.Any_Local_Date;
+      function Decode_Time (S : String) return TOML.Any_Local_Time;
+
+      ---------------------
+      -- Decode_Datetime --
+      ---------------------
+
+      function Decode_Datetime (S : String) return TOML.Any_Local_Datetime is
+         I : constant Positive := S'First;
+
+         pragma Assert (S'Length = 10 + 1 + 12);
+         pragma Assert (S (I + 10) = 'T');
+      begin
+         return (Decode_Date (S (I .. I + 9)),
+                 Decode_Time (S (I + 11 .. I + 22)));
+      end Decode_Datetime;
+
+      -----------------
+      -- Decode_Date --
+      -----------------
+
+      function Decode_Date (S : String) return TOML.Any_Local_Date is
+         I : constant Positive := S'First;
+
+         pragma Assert (S'Length = 10);
+         pragma Assert (S (I + 4) = '-');
+         pragma Assert (S (I + 7) = '-');
+
+         Year  : String renames S (I + 0 .. I + 3);
+         Month : String renames S (I + 5 .. I + 6);
+         Day   : String renames S (I + 8 .. I + 9);
+      begin
+         return (TOML.Any_Year'Value (Year),
+                 TOML.Any_Month'Value (Month),
+                 TOML.Any_Day'Value (Day));
+      end Decode_Date;
+
+      -----------------
+      -- Decode_Time --
+      -----------------
+
+      function Decode_Time (S : String) return TOML.Any_Local_Time is
+         I : constant Positive := S'First;
+
+         pragma Assert (S'Length = 12);
+         pragma Assert (S (I + 2) = ':');
+         pragma Assert (S (I + 5) = ':');
+
+         Hour        : String renames S (I + 0 .. I + 1);
+         Minute      : String renames S (I + 3 .. I + 4);
+         Second      : String renames S (I + 6 .. I + 7);
+         Millisecond : String renames S (I + 9 .. I + 11);
+      begin
+         return (TOML.Any_Hour'Value (Hour),
+                 TOML.Any_Minute'Value (Minute),
+                 TOML.Any_Second'Value (Second),
+                 TOML.Any_Millisecond'Value (Millisecond));
+      end Decode_Time;
+
       Result : TOML.TOML_Value;
    begin
       case Desc.Kind is
@@ -139,45 +200,15 @@ procedure Ada_TOML_Encode is
                            Result := TOML.Create_Boolean (Boolean'Value (S));
                         end;
 
+                     elsif T = "local-datetime" then
+                        Result := TOML.Create_Local_Datetime
+                          (Decode_Datetime (V.Get));
+
                      elsif T = "date" then
-                        declare
-                           S : constant String := V.Get;
-                           I : constant Positive := S'First;
-
-                           pragma Assert (S'Length = 10);
-                           pragma Assert (S (I + 4) = '-');
-                           pragma Assert (S (I + 7) = '-');
-
-                           Year  : String renames S (I + 0 .. I + 3);
-                           Month : String renames S (I + 5 .. I + 6);
-                           Day   : String renames S (I + 8 .. I + 9);
-                        begin
-                           Result := TOML.Create_Local_Date
-                             ((TOML.Any_Year'Value (Year),
-                               TOML.Any_Month'Value (Month),
-                               TOML.Any_Day'Value (Day)));
-                        end;
+                        Result := TOML.Create_Local_Date (Decode_Date (V.Get));
 
                      elsif T = "time" then
-                        declare
-                           S : constant String := V.Get;
-                           I : constant Positive := S'First;
-
-                           pragma Assert (S'Length = 12);
-                           pragma Assert (S (I + 2) = ':');
-                           pragma Assert (S (I + 5) = ':');
-
-                           Hour        : String renames S (I + 0 .. I + 1);
-                           Minute      : String renames S (I + 3 .. I + 4);
-                           Second      : String renames S (I + 6 .. I + 7);
-                           Millisecond : String renames S (I + 9 .. I + 11);
-                        begin
-                           Result := TOML.Create_Local_Time
-                             ((TOML.Any_Hour'Value (Hour),
-                               TOML.Any_Minute'Value (Minute),
-                               TOML.Any_Second'Value (Second),
-                               TOML.Any_Millisecond'Value (Millisecond)));
-                        end;
+                        Result := TOML.Create_Local_Time (Decode_Time (V.Get));
 
                      elsif T = "array" then
                         Result := Interpret (V);

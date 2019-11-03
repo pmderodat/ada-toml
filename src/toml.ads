@@ -63,6 +63,11 @@ package TOML with Preelaborate is
       Millisecond : Any_Millisecond;
    end record;
 
+   type Any_Local_Datetime is record
+      Date : Any_Local_Date;
+      Time : Any_Local_Time;
+   end record;
+
    -----------------------
    -- Generic accessors --
    -----------------------
@@ -109,6 +114,10 @@ package TOML with Preelaborate is
      (Value : TOML_Value) return Unbounded_UTF8_String
       with Pre => Value.Kind = TOML_String;
    --  Likewise, but return an unbounded string
+
+   function As_Local_Datetime (Value : TOML_Value) return Any_Local_Datetime
+      with Pre => Value.Kind = TOML_Local_Datetime;
+   --  Return the local datetime that Value represents
 
    function As_Local_Date (Value : TOML_Value) return Any_Local_Date
       with Pre => Value.Kind = TOML_Local_Date;
@@ -222,6 +231,13 @@ package TOML with Preelaborate is
       with Post => Create_String'Result.Kind = TOML_String
                    and then Create_String'Result.As_Unbounded_String = Value;
    --  Create a TOML string value
+
+   function Create_Local_Datetime
+     (Value : Any_Local_Datetime) return TOML_Value
+      with Post =>
+         Create_Local_Datetime'Result.Kind = TOML_Local_Datetime
+         and then Create_Local_Datetime'Result.As_Local_Datetime = Value;
+   --  Create a TOML local datetime value
 
    function Create_Local_Date (Value : Any_Local_Date) return TOML_Value
       with Post => Create_Local_Date'Result.Kind = TOML_Local_Date

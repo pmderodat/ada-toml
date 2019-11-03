@@ -57,8 +57,8 @@ is
       Square_Bracket_Open, Square_Bracket_Close,
       Double_Square_Bracket_Open, Double_Square_Bracket_Close,
 
-      Boolean_Literal, Integer_Literal, String_Literal, Local_Date_Literal,
-      Local_Time_Literal);
+      Boolean_Literal, Integer_Literal, String_Literal, Local_Datetime_Literal,
+      Local_Date_Literal, Local_Time_Literal);
 
    subtype No_Text_Token is Token_Kind range
       Newline ..  Double_Square_Bracket_Close;
@@ -67,12 +67,14 @@ is
 
    type Any_Token (Kind : Token_Kind := Token_Kind'First) is record
       case Kind is
-         when No_Text_Token      => null;
-         when Boolean_Literal    => Boolean_Value    : Boolean;
-         when Integer_Literal    => Integer_Value    : Any_Integer;
-         when String_Literal     => String_Value     : Unbounded_UTF8_String;
-         when Local_Date_Literal => Local_Date_Value : Any_Local_Date;
-         when Local_Time_Literal => Local_Time_Value : Any_Local_Time;
+         when No_Text_Token          => null;
+         when Boolean_Literal        => Boolean_Value : Boolean;
+         when Integer_Literal        => Integer_Value : Any_Integer;
+         when String_Literal         => String_Value  : Unbounded_UTF8_String;
+         when Local_Datetime_Literal =>
+            Local_Datetime_Value : Any_Local_Datetime;
+         when Local_Date_Literal     => Local_Date_Value : Any_Local_Date;
+         when Local_Time_Literal     => Local_Time_Value : Any_Local_Time;
       end case;
    end record;
 
@@ -209,12 +211,13 @@ is
    --  Digit_Count digits. Put the decoded value in Value and return True if
    --  successful. Create a lexing error and return False otherwise.
 
-   function Read_Local_Date
+   function Read_Date
      (Base_Value : Interfaces.Unsigned_64; Base_Digits : Natural)
       return Boolean;
-   --  Helper for Read_Number_Like. Read a local date, considering that we
-   --  already consumed Base_Digits digits, whose value is Base_Value. Return
-   --  whether successful, updating Token_Buffer accordingly.
+   --  Helper for Read_Number_Like. Read a local date or an offset date,
+   --  considering that we already consumed Base_Digits digits, whose value is
+   --  Base_Value. Return whether successful, updating Token_Buffer
+   --  accordingly.
 
    function Read_Local_Time
      (Base_Value : Interfaces.Unsigned_64; Base_Digits : Natural)
@@ -1166,7 +1169,7 @@ is
                   end if;
 
                   if Codepoint_Buffer.Codepoint = '-' then
-                     return Read_Local_Date (Abs_Value, Digit_Count);
+                     return Read_Date (Abs_Value, Digit_Count);
                   else
                      return Read_Local_Time (Abs_Value, Digit_Count);
                   end if;
@@ -1311,11 +1314,11 @@ is
       return True;
    end Read_Datetime_Field;
 
-   ---------------------
-   -- Read_Local_Date --
-   ---------------------
+   ---------------
+   -- Read_Date --
+   ---------------
 
-   function Read_Local_Date
+   function Read_Date
      (Base_Value : Interfaces.Unsigned_64; Base_Digits : Natural)
       return Boolean
    is
@@ -1329,6 +1332,7 @@ is
          Unsigned_64 (Any_Day'First) .. Unsigned_64 (Any_Day'Last);
 
       Year, Month, Day : Unsigned_64 := Base_Value;
+      Datetime         : Any_Local_Datetime;
    begin
       --  Finish reading the year and consume the following dash
 
@@ -1375,13 +1379,57 @@ is
          return Create_Lexing_Error ("out of range day");
       end if;
 
-      Token_Buffer.Token :=
-        (Kind             => Local_Date_Literal,
-         Local_Date_Value => (Year  => Any_Year (Year),
-                              Month => Any_Month (Month),
-                              Day   => Any_Day (Day)));
+      Datetime.Date := (Year  => Any_Year (Year),
+                        Month => Any_Month (Month),
+                        Day   => Any_Day (Day));
+      Token_Buffer.Token := (Kind             => Local_Date_Literal,
+                             Local_Date_Value => Datetime.Date);
+
+      --  Now try to read a local time: if there is one, we can create a local
+      --  datetime, otherwise it's just a local date.
+
+      if not Codepoint_Buffer.EOF and then Codepoint_Buffer.Codepoint = 'T'
+      then
+         --  If the first codepoint after the date is 'T', then we know we have
+         --  a local time ahead.
+
+         if not Read_Codepoint then
+            return False;
+         elsif Codepoint_Buffer.EOF then
+            return Create_Lexing_Error ("truncated datetime");
+         end if;
+
+      elsif not Codepoint_Buffer.EOF and then Codepoint_Buffer.Codepoint = ' '
+      then
+         --  If the first codepoint after the date is ' ', then we know we have
+         --  a local time ahead iff a digit follows this space. Otherwise, just
+         --  consider it's the beginning of another token.
+
+         if not Read_Codepoint then
+            return False;
+         elsif Codepoint_Buffer.EOF
+               or else Codepoint_Buffer.Codepoint not in '0' .. '9'
+         then
+            Reemit_Codepoint;
+            return True;
+         end if;
+
+      else
+         Reemit_Codepoint;
+         return True;
+      end if;
+
+      --  At this point, we know there is a local time ahead, so try to read it
+
+      if not Read_Local_Time (0, 0) then
+         return False;
+      end if;
+
+      Datetime.Time := Token_Buffer.Token.Local_Time_Value;
+      Token_Buffer.Token := (Kind                 => Local_Datetime_Literal,
+                             Local_Datetime_Value => Datetime);
       return True;
-   end Read_Local_Date;
+   end Read_Date;
 
    ---------------------
    -- Read_Local_Time --
@@ -1805,6 +1853,10 @@ is
 
          when String_Literal =>
             Value := Create_String (Token_Buffer.Token.String_Value);
+
+         when Local_Datetime_Literal =>
+            Value := Create_Local_Datetime
+              (Token_Buffer.Token.Local_Datetime_Value);
 
          when Local_Date_Literal =>
             Value := Create_Local_Date (Token_Buffer.Token.Local_Date_Value);

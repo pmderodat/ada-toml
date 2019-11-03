@@ -3,6 +3,8 @@ output: {
     "d1": {"type": "date", "value": "0000-01-01"},
     "d2": {"type": "date", "value": "9999-12-31"},
     "d3": {"type": "date", "value": "1970-02-28"},
+    "d4": [{"type": "date", "value": "0001-01-01"},
+           {"type": "date", "value": "9999-12-31"}],
 
     "t1": {"type": "time", "value": "00:00:00.000"},
 
@@ -20,5 +22,9 @@ output: {
 
     "t11": {"type": "time", "value": "00:00:01.000"},
     "t12": {"type": "time", "value": "23:56:60.999"},
-    "t13": {"type": "time", "value": "23:56:60.999"}
+    "t13": {"type": "time", "value": "23:56:60.999"},
+
+    "ldt1": {"type": "local-datetime", "value": "0001-01-01T00:00:00"},
+    "ldt2": {"type": "local-datetime", "value": "0001-01-01T00:00:00"},
+    "ldt3": {"type": "local-datetime", "value": "9999-12-31T23:59:59.999"}
 }

@@ -59,7 +59,9 @@ package body TOML is
             Boolean_Value : Boolean;
 
          when TOML_Offset_Datetime => null;
-         when TOML_Local_Datetime => null;
+
+         when TOML_Local_Datetime =>
+            Local_Datetime_Value : Any_Local_Datetime;
 
          when TOML_Local_Date =>
             Local_Date_Value : Any_Local_Date;
@@ -176,6 +178,10 @@ package body TOML is
          when TOML_Boolean =>
             return Left.Value.Boolean_Value = Right.Value.Boolean_Value;
 
+         when TOML_Local_Datetime =>
+            return Left.Value.Local_Datetime_Value
+                   = Right.Value.Local_Datetime_Value;
+
          when TOML_Local_Date =>
             return Left.Value.Local_Date_Value = Right.Value.Local_Date_Value;
 
@@ -184,7 +190,6 @@ package body TOML is
 
          when TOML_Float
             | TOML_Offset_Datetime
-            | TOML_Local_Datetime
          =>
             raise Program_Error;
       end case;
@@ -221,6 +226,9 @@ package body TOML is
          when TOML_Boolean =>
             Result := Create_Boolean (Value.Value.Boolean_Value);
 
+         when TOML_Local_Datetime =>
+            Result := Create_Local_Datetime (Value.Value.Local_Datetime_Value);
+
          when TOML_Local_Date =>
             Result := Create_Local_Date (Value.Value.Local_Date_Value);
 
@@ -229,7 +237,6 @@ package body TOML is
 
          when TOML_Float
             | TOML_Offset_Datetime
-            | TOML_Local_Datetime
          =>
             raise Program_Error;
       end case;
@@ -273,6 +280,15 @@ package body TOML is
    begin
       return Value.Value.String_Value;
    end As_Unbounded_String;
+
+   -----------------------
+   -- As_Local_Datetime --
+   -----------------------
+
+   function As_Local_Datetime (Value : TOML_Value) return Any_Local_Datetime is
+   begin
+      return Value.Value.Local_Datetime_Value;
+   end As_Local_Datetime;
 
    -------------------
    -- As_Local_Date --
@@ -463,6 +479,19 @@ package body TOML is
          Ref_Count    => 1,
          String_Value => Value));
    end Create_String;
+
+   ---------------------------
+   -- Create_Local_Datetime --
+   ---------------------------
+
+   function Create_Local_Datetime
+     (Value : Any_Local_Datetime) return TOML_Value is
+   begin
+      return Create_Value (new TOML_Value_Record'
+        (Kind                 => TOML_Local_Datetime,
+         Ref_Count            => 1,
+         Local_Datetime_Value => Value));
+   end Create_Local_Datetime;
 
    -----------------------
    -- Create_Local_Date --

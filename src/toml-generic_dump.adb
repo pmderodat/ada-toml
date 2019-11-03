@@ -389,6 +389,37 @@ is
    -----------------
 
    procedure Dump_Inline (Value : TOML_Value) is
+
+      procedure Put (Datetime : TOML.Any_Local_Datetime);
+      procedure Put (Date : TOML.Any_Local_Date);
+      procedure Put (Time : TOML.Any_Local_Time);
+
+      ---------
+      -- Put --
+      ---------
+
+      procedure Put (Datetime : TOML.Any_Local_Datetime) is
+      begin
+         Put (Datetime.Date);
+         Put ("T");
+         Put (Datetime.Time);
+      end Put;
+
+      procedure Put (Date : TOML.Any_Local_Date) is
+      begin
+         Put (Pad_Number (Date.Year'Image, 4)
+              & "-" & Pad_Number (Date.Month'Image, 2)
+              & "-" & Pad_Number (Date.Day'Image, 2));
+      end Put;
+
+      procedure Put (Time : TOML.Any_Local_Time) is
+      begin
+         Put (Pad_Number (Time.Hour'Image, 2)
+              & ":" & Pad_Number (Time.Minute'Image, 2)
+              & ":" & Pad_Number (Time.Second'Image, 2)
+              & "." & Pad_Number (Time.Millisecond'Image, 3));
+      end Put;
+
    begin
       case Value.Kind is
          when TOML_Boolean =>
@@ -402,24 +433,14 @@ is
 
             Put (To_String (Format_String (Value.As_Unbounded_String)));
 
+         when TOML_Local_Datetime =>
+            Put (Value.As_Local_Datetime);
+
          when TOML_Local_Date =>
-            declare
-               V : constant Any_Local_Date := Value.As_Local_Date;
-            begin
-               Put (Pad_Number (V.Year'Image, 4)
-                    & "-" & Pad_Number (V.Month'Image, 2)
-                    & "-" & Pad_Number (V.Day'Image, 2));
-            end;
+            Put (Value.As_Local_Date);
 
          when TOML_Local_Time =>
-            declare
-               V : constant TOML.Any_Local_Time := Value.As_Local_Time;
-            begin
-               Put (Pad_Number (V.Hour'Image, 2)
-                    & ":" & Pad_Number (V.Minute'Image, 2)
-                    & ":" & Pad_Number (V.Second'Image, 2)
-                    & "." & Pad_Number (V.Millisecond'Image, 3));
-            end;
+            Put (Value.As_Local_Time);
 
          when TOML_Array =>
             Put ("[" & ASCII.LF);

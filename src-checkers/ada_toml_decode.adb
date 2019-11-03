@@ -32,7 +32,8 @@ procedure Ada_TOML_Decode is
    subtype Wrapped_Kind is TOML.Any_Value_Kind
       with Static_Predicate =>
          Wrapped_Kind in TOML.TOML_Array .. TOML.TOML_Boolean
-                       | TOML.TOML_Local_Date | TOML.TOML_Local_Time;
+                       | TOML.TOML_Local_Datetime | TOML.TOML_Local_Date
+                       | TOML.TOML_Local_Time;
    --  TODO: handle other kinds
 
    function Kind_Name (Kind : Wrapped_Kind) return String;
@@ -64,13 +65,14 @@ procedure Ada_TOML_Decode is
    function Kind_Name (Kind : Wrapped_Kind) return String is
    begin
       return (case Kind is
-              when TOML.TOML_Array      => "array",
-              when TOML.TOML_String     => "string",
-              when TOML.TOML_Integer    => "integer",
-              when TOML.TOML_Float      => "float",
-              when TOML.TOML_Boolean    => "bool",
-              when TOML.TOML_Local_Date => "date",
-              when TOML.TOML_Local_Time => "time");
+              when TOML.TOML_Array          => "array",
+              when TOML.TOML_String         => "string",
+              when TOML.TOML_Integer        => "integer",
+              when TOML.TOML_Float          => "float",
+              when TOML.TOML_Boolean        => "bool",
+              when TOML.TOML_Local_Datetime => "local-datetime",
+              when TOML.TOML_Local_Date     => "date",
+              when TOML.TOML_Local_Time     => "time");
    end Kind_Name;
 
    ------------------
@@ -177,6 +179,37 @@ procedure Ada_TOML_Decode is
 
    procedure Dump (Value : TOML.TOML_Value) is
       use all type TOML.Any_Value_Kind;
+
+      procedure Put (Datetime : TOML.Any_Local_Datetime);
+      procedure Put (Date : TOML.Any_Local_Date);
+      procedure Put (Time : TOML.Any_Local_Time);
+
+      ---------
+      -- Put --
+      ---------
+
+      procedure Put (Datetime : TOML.Any_Local_Datetime) is
+      begin
+         Put (Datetime.Date);
+         IO.Put ("T");
+         Put (Datetime.Time);
+      end Put;
+
+      procedure Put (Date : TOML.Any_Local_Date) is
+      begin
+         IO.Put (Pad_Number (Date.Year'Image, 4)
+                 & "-" & Pad_Number (Date.Month'Image, 2)
+                 & "-" & Pad_Number (Date.Day'Image, 2));
+      end Put;
+
+      procedure Put (Time : TOML.Any_Local_Time) is
+      begin
+         IO.Put (Pad_Number (Time.Hour'Image, 2)
+                 & ":" & Pad_Number (Time.Minute'Image, 2)
+                 & ":" & Pad_Number (Time.Second'Image, 2)
+                 & "." & Pad_Number (Time.Millisecond'Image, 3));
+      end Put;
+
    begin
       if Value.Kind = TOML_Table then
          IO.Put_Line ("{");
@@ -226,25 +259,20 @@ procedure Ada_TOML_Decode is
                   IO.Put_Line ("""false""");
                end if;
 
+            when TOML_Local_Datetime =>
+               IO.Put ("""");
+               Put (Value.As_Local_Datetime);
+               IO.Put_Line ("""");
+
             when TOML_Local_Date =>
-               declare
-                  V : constant TOML.Any_Local_Date := Value.As_Local_Date;
-               begin
-                  IO.Put_Line ("""" & Pad_Number (V.Year'Image, 4)
-                               & "-" & Pad_Number (V.Month'Image, 2)
-                               & "-" & Pad_Number (V.Day'Image, 2) & """");
-               end;
+               IO.Put ("""");
+               Put (Value.As_Local_Date);
+               IO.Put_Line ("""");
 
             when TOML_Local_Time =>
-               declare
-                  V : constant TOML.Any_Local_Time := Value.As_Local_Time;
-               begin
-                  IO.Put_Line ("""" & Pad_Number (V.Hour'Image, 2)
-                               & ":" & Pad_Number (V.Minute'Image, 2)
-                               & ":" & Pad_Number (V.Second'Image, 2)
-                               & "." & Pad_Number (V.Millisecond'Image, 3)
-                               & """");
-               end;
+               IO.Put ("""");
+               Put (Value.As_Local_Time);
+               IO.Put_Line ("""");
          end case;
          IO.Put_Line ("}");
       end if;
