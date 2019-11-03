@@ -26,5 +26,14 @@ output: {
 
     "ldt1": {"type": "local-datetime", "value": "0001-01-01T00:00:00"},
     "ldt2": {"type": "local-datetime", "value": "0001-01-01T00:00:00"},
-    "ldt3": {"type": "local-datetime", "value": "9999-12-31T23:59:59.999"}
+    "ldt3": {"type": "local-datetime", "value": "9999-12-31T23:59:59.999"},
+
+    "odt1": {"type": "datetime", "value": "0001-01-01T00:00:00+00:00"},
+    "odt2": {"type": "datetime", "value": "0001-01-01 00:00:00+00:00"},
+    "odt3": {"type": "datetime", "value": "0001-01-01 00:00:00-00:00"},
+    "odt4": {"type": "datetime", "value": "0001-01-01 00:00:00+01:01"},
+    "odt5": {"type": "datetime", "value": "0001-01-01 00:00:00-01:01"},
+    "odt6": {"type": "datetime", "value": "0001-01-01 00:00:00+23:59"},
+    "odt7": {"type": "datetime", "value": "0001-01-01 00:00:00-23:59"},
+    "odt8": {"type": "datetime", "value": "9999-12-31 23:59:59.999+00:00"}
 }

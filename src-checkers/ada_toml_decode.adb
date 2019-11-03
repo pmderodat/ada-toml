@@ -32,8 +32,8 @@ procedure Ada_TOML_Decode is
    subtype Wrapped_Kind is TOML.Any_Value_Kind
       with Static_Predicate =>
          Wrapped_Kind in TOML.TOML_Array .. TOML.TOML_Boolean
-                       | TOML.TOML_Local_Datetime | TOML.TOML_Local_Date
-                       | TOML.TOML_Local_Time;
+                       | TOML.TOML_Offset_Datetime | TOML.TOML_Local_Datetime
+                       | TOML.TOML_Local_Date | TOML.TOML_Local_Time;
    --  TODO: handle other kinds
 
    function Kind_Name (Kind : Wrapped_Kind) return String;
@@ -65,14 +65,15 @@ procedure Ada_TOML_Decode is
    function Kind_Name (Kind : Wrapped_Kind) return String is
    begin
       return (case Kind is
-              when TOML.TOML_Array          => "array",
-              when TOML.TOML_String         => "string",
-              when TOML.TOML_Integer        => "integer",
-              when TOML.TOML_Float          => "float",
-              when TOML.TOML_Boolean        => "bool",
-              when TOML.TOML_Local_Datetime => "local-datetime",
-              when TOML.TOML_Local_Date     => "date",
-              when TOML.TOML_Local_Time     => "time");
+              when TOML.TOML_Array           => "array",
+              when TOML.TOML_String          => "string",
+              when TOML.TOML_Integer         => "integer",
+              when TOML.TOML_Float           => "float",
+              when TOML.TOML_Boolean         => "bool",
+              when TOML.TOML_Offset_Datetime => "datetime",
+              when TOML.TOML_Local_Datetime  => "local-datetime",
+              when TOML.TOML_Local_Date      => "date",
+              when TOML.TOML_Local_Time      => "time");
    end Kind_Name;
 
    ------------------
@@ -258,6 +259,33 @@ procedure Ada_TOML_Decode is
                else
                   IO.Put_Line ("""false""");
                end if;
+
+            when TOML_Offset_Datetime =>
+               declare
+                  use type TOML.Any_Local_Offset;
+
+                  V               : constant TOML.Any_Offset_Datetime :=
+                     Value.As_Offset_Datetime;
+                  Absolute_Offset : constant TOML.Any_Local_Offset :=
+                    (if V.Offset < 0
+                     then -V.Offset
+                     else V.Offset);
+                  Hour_Offset     : constant TOML.Any_Local_Offset :=
+                     Absolute_Offset / 60;
+                  Minute_Offset   : constant TOML.Any_Local_Offset :=
+                     Absolute_Offset mod 60;
+               begin
+                  IO.Put ("""");
+                  Put (V.Datetime);
+                  if V.Offset < 0 or else V.Unknown_Offset then
+                     IO.Put ("-");
+                  else
+                     IO.Put ("+");
+                  end if;
+                  IO.Put (Pad_Number (Hour_Offset'Image, 2)
+                          & ":" & Pad_Number (Minute_Offset'Image, 2));
+                  IO.Put_Line ("""");
+               end;
 
             when TOML_Local_Datetime =>
                IO.Put ("""");

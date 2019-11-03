@@ -57,7 +57,8 @@ is
       Square_Bracket_Open, Square_Bracket_Close,
       Double_Square_Bracket_Open, Double_Square_Bracket_Close,
 
-      Boolean_Literal, Integer_Literal, String_Literal, Local_Datetime_Literal,
+      Boolean_Literal, Integer_Literal, String_Literal,
+      Offset_Datetime_Literal, Local_Datetime_Literal,
       Local_Date_Literal, Local_Time_Literal);
 
    subtype No_Text_Token is Token_Kind range
@@ -71,6 +72,8 @@ is
          when Boolean_Literal        => Boolean_Value : Boolean;
          when Integer_Literal        => Integer_Value : Any_Integer;
          when String_Literal         => String_Value  : Unbounded_UTF8_String;
+         when Offset_Datetime_Literal =>
+            Offset_Datetime_Value : Any_Offset_Datetime;
          when Local_Datetime_Literal =>
             Local_Datetime_Value : Any_Local_Datetime;
          when Local_Date_Literal     => Local_Date_Value : Any_Local_Date;
@@ -214,17 +217,25 @@ is
    function Read_Date
      (Base_Value : Interfaces.Unsigned_64; Base_Digits : Natural)
       return Boolean;
-   --  Helper for Read_Number_Like. Read a local date or an offset date,
-   --  considering that we already consumed Base_Digits digits, whose value is
-   --  Base_Value. Return whether successful, updating Token_Buffer
-   --  accordingly.
+   --  Helper for Read_Number_Like. Read a local date, local datetime or an
+   --  offset datetime, considering that we already consumed Base_Digits
+   --  digits, whose value is Base_Value. Return whether successful, updating
+   --  Token_Buffer accordingly.
 
    function Read_Local_Time
-     (Base_Value : Interfaces.Unsigned_64; Base_Digits : Natural)
-      return Boolean;
-   --  Helper for Read_Number_Like. Read a local time, considering that we
-   --  already consumed Base_Digits digits, whose value is Base_Value. Return
-   --  whether successful, updating Token_Buffer accordingly.
+     (Base_Value    : Interfaces.Unsigned_64;
+      Base_Digits   : Natural;
+      Read_Timezone : Boolean) return Boolean;
+   --  Helper for Read_Number_Like and Read_Date. Read a local time,
+   --  considering that we already consumed Base_Digits digits, whose value
+   --  is Base_Value. Return whether successful, updating Token_Buffer
+   --  accordingly (Local_Time_Literal).
+   --
+   --  If Read_Timezone is true, attempt to read the timezone information. In
+   --  this mode, assume that Token_Buffer already contains a date
+   --  (Local_Date_Literal) and update it to contain either an
+   --  Offset_Datetime_Literal variant (if there is a timezone) or a
+   --  Local_Datetime_Literal variant.
 
    function Read_Bare_Key return Boolean;
    --  Helper for Read_Token. Read a bare key, whose first character is in
@@ -1171,7 +1182,8 @@ is
                   if Codepoint_Buffer.Codepoint = '-' then
                      return Read_Date (Abs_Value, Digit_Count);
                   else
-                     return Read_Local_Time (Abs_Value, Digit_Count);
+                     return Read_Local_Time (Abs_Value, Digit_Count,
+                                             Read_Timezone => False);
                   end if;
 
                when others =>
@@ -1421,14 +1433,7 @@ is
 
       --  At this point, we know there is a local time ahead, so try to read it
 
-      if not Read_Local_Time (0, 0) then
-         return False;
-      end if;
-
-      Datetime.Time := Token_Buffer.Token.Local_Time_Value;
-      Token_Buffer.Token := (Kind                 => Local_Datetime_Literal,
-                             Local_Datetime_Value => Datetime);
-      return True;
+      return Read_Local_Time (0, 0, Read_Timezone => True);
    end Read_Date;
 
    ---------------------
@@ -1436,8 +1441,9 @@ is
    ---------------------
 
    function Read_Local_Time
-     (Base_Value : Interfaces.Unsigned_64; Base_Digits : Natural)
-      return Boolean
+     (Base_Value    : Interfaces.Unsigned_64;
+      Base_Digits   : Natural;
+      Read_Timezone : Boolean) return Boolean
    is
       use Interfaces;
 
@@ -1452,6 +1458,8 @@ is
          .. Unsigned_64 (Any_Millisecond'Last);
 
       Hour, Minute, Second, Millisecond : Unsigned_64 := Base_Value;
+
+      Time : Any_Local_Time;
    begin
       --  Finish reading the hour and consume the following colon
 
@@ -1532,13 +1540,115 @@ is
 
       pragma Assert (Millisecond in Millisecond_Range);
 
-      Token_Buffer.Token :=
-        (Kind             => Local_Time_Literal,
-         Local_Time_Value => (Hour        => Any_Hour (Hour),
-                              Minute      => Any_Minute (Minute),
-                              Second      => Any_Second (Second),
-                              Millisecond => Any_Millisecond (Millisecond)));
-      return True;
+      Time := (Hour        => Any_Hour (Hour),
+               Minute      => Any_Minute (Minute),
+               Second      => Any_Second (Second),
+               Millisecond => Any_Millisecond (Millisecond));
+
+      if not Read_Timezone then
+         Token_Buffer.Token :=
+           (Kind             => Local_Time_Literal,
+            Local_Time_Value => Time);
+         return True;
+      end if;
+
+      --  We were asked to read the timezone information: assume the token
+      --  buffer contains a date and complete it with the time, and the
+      --  timezone if present.
+
+      declare
+         Datetime : constant Any_Local_Datetime :=
+           (Date => Token_Buffer.Token.Local_Date_Value,
+            Time => Time);
+
+         --  Temporaries to build the local offset value that is read
+
+         Positive_Offset : Boolean;
+         --  Whether the offset is positive (starts with '+' or 'Z'). Note that
+         --  RFC 3339 states that a negative offset with zero minutes means
+         --  "unknown local offset".
+
+         Hour_Offset   : Unsigned_64 := 0;
+         Minute_Offset : Unsigned_64 := 0;
+         --  Individual temporaries for the amount of ours and of minutes for
+         --  the local offset.
+      begin
+         if not Read_Codepoint then
+            return False;
+         elsif Codepoint_Buffer.EOF
+            or else Codepoint_Buffer.Codepoint not in 'Z' | '+' | '-'
+         then
+            Reemit_Codepoint;
+            return True;
+         end if;
+
+         if Codepoint_Buffer.Codepoint = 'Z' then
+            Positive_Offset := True;
+         else
+            Positive_Offset := Codepoint_Buffer.Codepoint = '+';
+
+            --  Consume the hour offset and consume the colon
+
+            if not Read_Codepoint then
+               return False;
+            elsif Codepoint_Buffer.EOF then
+               return Create_Lexing_Error ("truncated hour offset");
+            elsif not Read_Datetime_Field ("hour offset", 2, 0, 0, Hour_Offset)
+            then
+               return False;
+            elsif Codepoint_Buffer.EOF
+                  or else Codepoint_Buffer.Codepoint /= ':'
+            then
+               return Create_Lexing_Error ("invalid hour offset");
+            end if;
+
+            --  Now consume the minute offset
+
+            if not Read_Codepoint then
+               return False;
+            elsif Codepoint_Buffer.EOF then
+               return Create_Lexing_Error ("truncated minute offset");
+            elsif not Read_Datetime_Field
+              ("minute offset", 2, 0, 0, Minute_Offset)
+            then
+               return False;
+            end if;
+
+            --  Reemit the last codepoint as Read_Datetime_Field consumes the
+            --  one that appears right after the last codepoint that is part of
+            --  the datetime field.
+
+            Reemit_Codepoint;
+         end if;
+
+         --  Check ranges for hours/minutes
+
+         if Hour_Offset not in Hour_Range then
+            return Create_Lexing_Error ("out of range hour offset");
+         elsif Minute_Offset not in Minute_Range then
+            return Create_Lexing_Error ("out of range minute offset");
+         end if;
+
+         --  Gather all decoded data to format the result
+
+         declare
+            Absolute_Offset : constant Any_Local_Offset := Any_Local_Offset
+              (60 * Hour_Offset + Minute_Offset);
+            Offset          : constant Any_Local_Offset :=
+              (if Positive_Offset
+               then Absolute_Offset
+               else -Absolute_Offset);
+            Offset_Datetime : constant Any_Offset_Datetime :=
+              (Datetime       => Datetime,
+               Offset         => Offset,
+               Unknown_Offset => Offset = 0 and then not Positive_Offset);
+         begin
+            Token_Buffer.Token :=
+              (Kind                  => Offset_Datetime_Literal,
+               Offset_Datetime_Value => Offset_Datetime);
+            return True;
+         end;
+      end;
    end Read_Local_Time;
 
    -------------------
@@ -1853,6 +1963,10 @@ is
 
          when String_Literal =>
             Value := Create_String (Token_Buffer.Token.String_Value);
+
+         when Offset_Datetime_Literal =>
+            Value := Create_Offset_Datetime
+              (Token_Buffer.Token.Offset_Datetime_Value);
 
          when Local_Datetime_Literal =>
             Value := Create_Local_Datetime

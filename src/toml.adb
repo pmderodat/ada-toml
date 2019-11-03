@@ -58,7 +58,8 @@ package body TOML is
          when TOML_Boolean =>
             Boolean_Value : Boolean;
 
-         when TOML_Offset_Datetime => null;
+         when TOML_Offset_Datetime =>
+            Offset_Datetime_Value : Any_Offset_Datetime;
 
          when TOML_Local_Datetime =>
             Local_Datetime_Value : Any_Local_Datetime;
@@ -178,6 +179,10 @@ package body TOML is
          when TOML_Boolean =>
             return Left.Value.Boolean_Value = Right.Value.Boolean_Value;
 
+         when TOML_Offset_Datetime =>
+            return Left.Value.Offset_Datetime_Value
+                   = Right.Value.Offset_Datetime_Value;
+
          when TOML_Local_Datetime =>
             return Left.Value.Local_Datetime_Value
                    = Right.Value.Local_Datetime_Value;
@@ -188,9 +193,7 @@ package body TOML is
          when TOML_Local_Time =>
             return Left.Value.Local_Time_Value = Right.Value.Local_Time_Value;
 
-         when TOML_Float
-            | TOML_Offset_Datetime
-         =>
+         when TOML_Float =>
             raise Program_Error;
       end case;
 
@@ -226,6 +229,10 @@ package body TOML is
          when TOML_Boolean =>
             Result := Create_Boolean (Value.Value.Boolean_Value);
 
+         when TOML_Offset_Datetime =>
+            Result :=
+               Create_Offset_Datetime (Value.Value.Offset_Datetime_Value);
+
          when TOML_Local_Datetime =>
             Result := Create_Local_Datetime (Value.Value.Local_Datetime_Value);
 
@@ -235,9 +242,7 @@ package body TOML is
          when TOML_Local_Time =>
             Result := Create_Local_Time (Value.Value.Local_Time_Value);
 
-         when TOML_Float
-            | TOML_Offset_Datetime
-         =>
+         when TOML_Float =>
             raise Program_Error;
       end case;
 
@@ -280,6 +285,16 @@ package body TOML is
    begin
       return Value.Value.String_Value;
    end As_Unbounded_String;
+
+   ------------------------
+   -- As_Offset_Datetime --
+   ------------------------
+
+   function As_Offset_Datetime (Value : TOML_Value) return Any_Offset_Datetime
+   is
+   begin
+      return Value.Value.Offset_Datetime_Value;
+   end As_Offset_Datetime;
 
    -----------------------
    -- As_Local_Datetime --
@@ -479,6 +494,19 @@ package body TOML is
          Ref_Count    => 1,
          String_Value => Value));
    end Create_String;
+
+   ----------------------------
+   -- Create_Offset_Datetime --
+   ----------------------------
+
+   function Create_Offset_Datetime
+     (Value : Any_Offset_Datetime) return TOML_Value is
+   begin
+      return Create_Value (new TOML_Value_Record'
+        (Kind                  => TOML_Offset_Datetime,
+         Ref_Count             => 1,
+         Offset_Datetime_Value => Value));
+   end Create_Offset_Datetime;
 
    ---------------------------
    -- Create_Local_Datetime --

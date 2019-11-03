@@ -56,6 +56,10 @@ package TOML with Preelaborate is
    type Any_Second is range 0 .. 60;
    type Any_Millisecond is range 0 .. 999;
 
+   type Any_Local_Offset is range -(23 * 60 + 59) .. 23 * 60 + 59;
+   --  Offset between local time and UTC, in minutes. We allow from -23:59 to
+   --  +23:59.
+
    type Any_Local_Time is record
       Hour        : Any_Hour;
       Minute      : Any_Minute;
@@ -67,6 +71,14 @@ package TOML with Preelaborate is
       Date : Any_Local_Date;
       Time : Any_Local_Time;
    end record;
+
+   type Any_Offset_Datetime is record
+      Datetime       : Any_Local_Datetime;
+      Offset         : Any_Local_Offset;
+      Unknown_Offset : Boolean;
+   end record
+      with Dynamic_Predicate => not Any_Offset_Datetime.Unknown_Offset
+                                or else Any_Offset_Datetime.Offset = 0;
 
    -----------------------
    -- Generic accessors --
@@ -114,6 +126,10 @@ package TOML with Preelaborate is
      (Value : TOML_Value) return Unbounded_UTF8_String
       with Pre => Value.Kind = TOML_String;
    --  Likewise, but return an unbounded string
+
+   function As_Offset_Datetime (Value : TOML_Value) return Any_Offset_Datetime
+      with Pre => Value.Kind = TOML_Offset_Datetime;
+   --  Return the offset datetime that Value represents
 
    function As_Local_Datetime (Value : TOML_Value) return Any_Local_Datetime
       with Pre => Value.Kind = TOML_Local_Datetime;
@@ -231,6 +247,13 @@ package TOML with Preelaborate is
       with Post => Create_String'Result.Kind = TOML_String
                    and then Create_String'Result.As_Unbounded_String = Value;
    --  Create a TOML string value
+
+   function Create_Offset_Datetime
+     (Value : Any_Offset_Datetime) return TOML_Value
+      with Post =>
+         Create_Offset_Datetime'Result.Kind = TOML_Offset_Datetime
+         and then Create_Offset_Datetime'Result.As_Offset_Datetime = Value;
+   --  Create a TOML offset datetime value
 
    function Create_Local_Datetime
      (Value : Any_Local_Datetime) return TOML_Value

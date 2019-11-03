@@ -433,6 +433,29 @@ is
 
             Put (To_String (Format_String (Value.As_Unbounded_String)));
 
+         when TOML_Offset_Datetime =>
+            declare
+               V               : constant Any_Offset_Datetime :=
+                  Value.As_Offset_Datetime;
+               Absolute_Offset : constant Any_Local_Offset :=
+                 (if V.Offset < 0
+                  then -V.Offset
+                  else V.Offset);
+               Hour_Offset     : constant Any_Local_Offset :=
+                  Absolute_Offset / 60;
+               Minute_Offset   : constant Any_Local_Offset :=
+                  Absolute_Offset mod 60;
+            begin
+               Put (V.Datetime);
+               if V.Offset < 0 or else V.Unknown_Offset then
+                  Put ("-");
+               else
+                  Put ("+");
+               end if;
+               Put (Pad_Number (Hour_Offset'Image, 2)
+                    & ":" & Pad_Number (Minute_Offset'Image, 2));
+            end;
+
          when TOML_Local_Datetime =>
             Put (Value.As_Local_Datetime);
 
