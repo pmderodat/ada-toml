@@ -1316,7 +1316,7 @@ is
       --  If we reach this point, we know that the token is an integer (it's
       --  not a date or something else).
 
-      if not Reject_Leading_Zero then
+      if not Reject_Leading_Zero or else not Reject_Passed_Underscore then
          return False;
       end if;
 
