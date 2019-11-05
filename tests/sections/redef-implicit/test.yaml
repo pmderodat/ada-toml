@@ -1,0 +1,9 @@
+driver: decoder
+output: {
+    "a": {
+        "bar": {"type": "int", "value": "2"},
+        "b": {
+            "foo": {"type": "int", "value": "1"},
+        }
+    }
+}

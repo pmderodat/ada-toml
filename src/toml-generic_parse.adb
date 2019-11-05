@@ -2115,6 +2115,7 @@ is
    begin
       if Next_Table.Is_Null then
          Next_Table := Create_Table;
+         Next_Table.Set_Implicitly_Created;
          Table.Set (Key, Next_Table);
          Table := Next_Table;
          return True;
@@ -2202,12 +2203,17 @@ is
 
       else
          --  If Key is already associated to a table, return it (it's an error
-         --  if it is not a table). Create the destination table otherwise.
+         --  if it is not a table or if it was already created explicitly).
+         --  Create the destination table otherwise.
 
          if Table.Has (Key) then
             Current_Table := Table.Get (Key);
             if Current_Table.Kind /= TOML_Table then
                return Create_Syntax_Error ("duplicate key");
+            elsif Current_Table.Implicitly_Created then
+               Current_Table.Set_Explicitly_Created;
+            else
+               return Create_Syntax_Error ("cannot create tables twice");
             end if;
          else
             Current_Table := Create_Table;
