@@ -95,9 +95,10 @@ class DecoderTestDriver(TestDriver):
     "input.toml" input file and checks that its output is equivalent to the
     "output" entry in the test.yaml file.
 
-    If the test.yaml file contains a "expected_error" entry, check instead that
-    the program exits with a non-zero status code and that it emits the
-    provided error message.
+    If the test.yaml file contains an "error" entry, expect that
+    "ada_toml_decode" exits with a non-zero status code. If "error" is not True,
+    it must be a string: this checks that t it emits the provided error
+    message.
     """
 
     decoder_program = 'obj-checkers/ada_toml_decode'
@@ -148,7 +149,10 @@ class DecoderTestDriver(TestDriver):
             if p.status == 0:
                 return self.push_status(
                     'Error expected, but parsing succeeded')
-            elif p.out.strip() != expected_error:
+            elif (
+                expected_error is not True and
+                p.out.strip() != expected_error
+            ):
                 return self.push_status('Unexpected error:\n{}'.format(p.out))
             else:
                 return self.push_success()
