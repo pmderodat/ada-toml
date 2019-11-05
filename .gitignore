@@ -3,3 +3,8 @@ obj
 obj-checkers
 out
 tmp
+
+tests/burntsushi-toml-test/
+tests/iarna-toml-spec-tests/
+toml-spec-tests/
+toml-test/
