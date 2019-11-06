@@ -2063,6 +2063,16 @@ is
                   return False;
                end if;
 
+               --  Expect either a new line, or the end of the file
+
+               if not Read_Token (Key_Expected => True) then
+                  return False;
+               elsif Token_Buffer.EOF then
+                  return True;
+               elsif Token_Buffer.Token.Kind /= Newline then
+                  return Create_Syntax_Error ("missing newline");
+               end if;
+
                return True;
             end;
 
