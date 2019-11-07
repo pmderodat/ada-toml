@@ -30,6 +30,10 @@ is
    subtype WW_Non_ASCII is Wide_Wide_Character
       range Wide_Wide_Character'Val (16#80#) .. Wide_Wide_Character'Last;
 
+   subtype WW_Surrogates is Wide_Wide_Character
+      range Wide_Wide_Character'Val (16#D800#)
+         .. Wide_Wide_Character'Val (16#DFFF#);
+
    type Codepoint_Buffer_Type (EOF : Boolean := False) is record
       To_Reemit : Boolean;
       --  If true, the next call to Read_Codepoint should do nothing, except
@@ -515,6 +519,12 @@ is
 
       Codepoint_Buffer.Codepoint := Wide_Wide_Character'Val (Result);
 
+      --  Reject surrogate codepoints
+
+      if Codepoint_Buffer.Codepoint in WW_Surrogates then
+         return Create_Error ("surrogate codepoints are invalid");
+      end if;
+
       return True;
    end Read_Codepoint;
 
@@ -844,8 +854,19 @@ is
          end;
       end loop;
 
-      Append_As_UTF8 (Wide_Wide_Character'Val (Result));
-      return True;
+      declare
+         Codepoint : constant Wide_Wide_Character :=
+            Wide_Wide_Character'Val (Result);
+      begin
+         --  Reject surrogate codepoints
+
+         if Codepoint in WW_Surrogates then
+            return Create_Error ("surrogate codepoints are invalid", Location);
+         end if;
+
+         Append_As_UTF8 (Codepoint);
+         return True;
+      end;
    end Read_Unicode_Escape_Sequence;
 
    ------------------------

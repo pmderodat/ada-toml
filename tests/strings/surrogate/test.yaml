@@ -1,0 +1,2 @@
+driver: decoder
+error: "1:6: surrogate codepoints are invalid"
