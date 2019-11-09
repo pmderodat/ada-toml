@@ -438,15 +438,15 @@ private
    --  information.
 
    function Implicitly_Created (Self : TOML_Value'Class) return Boolean
-      with Pre => Self.Kind = TOML_Table;
+      with Pre => Self.Kind in TOML_Table | TOML_Array;
    --  Helper for parsing. Return whether Self was created implicitly
 
    procedure Set_Implicitly_Created (Self : TOML_Value'Class)
-      with Pre => Self.Kind = TOML_Table;
+      with Pre => Self.Kind in TOML_Table | TOML_Array;
    --  Make future calls to Implicitly_Created return True for Self
 
    procedure Set_Explicitly_Created (Self : TOML_Value'Class)
-      with Pre => Self.Kind = TOML_Table;
+      with Pre => Self.Kind in TOML_Table | TOML_Array;
    --  Make future calls to Implicitly_Created return False for Self
 
 end TOML;

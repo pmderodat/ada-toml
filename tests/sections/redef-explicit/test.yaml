@@ -1,2 +1,2 @@
 driver: decoder
-error: '5:1: cannot create tables twice'
+error: '4:1: cannot create tables twice'

@@ -35,7 +35,7 @@ package body TOML is
          when TOML_Table =>
             Map_Value : TOML_Maps.Map;
 
-            Implicitly_Created : Boolean;
+            Table_Implicitly_Created : Boolean;
             --  Helper for parsing: true iff this table was created implictly
             --  when parsing a sub-table. For instance, this is true for the
             --  table "a" if we read "[a.b]" but not yet "[a]".
@@ -50,6 +50,9 @@ package body TOML is
 
             Array_Value : TOML_Vectors.Vector;
             --  List of values for all items
+
+            Array_Implicitly_Created : Boolean;
+            --  Same as Table_Implicitly_Created
 
          when TOML_String =>
             String_Value : Unbounded_String;
@@ -576,10 +579,10 @@ package body TOML is
    function Create_Table return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
-        (Kind               => TOML_Table,
-         Ref_Count          => 1,
-         Map_Value          => <>,
-         Implicitly_Created => False));
+        (Kind                     => TOML_Table,
+         Ref_Count                => 1,
+         Map_Value                => <>,
+         Table_Implicitly_Created => False));
    end Create_Table;
 
    ---------
@@ -680,11 +683,12 @@ package body TOML is
    function Create_Array (Item_Kind : Any_Value_Kind) return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
-        (Kind          => TOML_Array,
-         Ref_Count     => 1,
-         Item_Kind_Set => True,
-         Item_Kind     => Item_Kind,
-         Array_Value   => <>));
+        (Kind                     => TOML_Array,
+         Ref_Count                => 1,
+         Item_Kind_Set            => True,
+         Item_Kind                => Item_Kind,
+         Array_Value              => <>,
+         Array_Implicitly_Created => False));
    end Create_Array;
 
    ------------------
@@ -694,11 +698,12 @@ package body TOML is
    function Create_Array return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
-        (Kind          => TOML_Array,
-         Ref_Count     => 1,
-         Item_Kind_Set => False,
-         Item_Kind     => <>,
-         Array_Value   => <>));
+        (Kind                     => TOML_Array,
+         Ref_Count                => 1,
+         Item_Kind_Set            => False,
+         Item_Kind                => <>,
+         Array_Value              => <>,
+         Array_Implicitly_Created => False));
    end Create_Array;
 
    -------------------
@@ -874,7 +879,11 @@ package body TOML is
 
    function Implicitly_Created (Self : TOML_Value'Class) return Boolean is
    begin
-      return Self.Value.Implicitly_Created;
+      if Self.Kind = TOML_Table then
+         return Self.Value.Table_Implicitly_Created;
+      else
+         return Self.Value.Array_Implicitly_Created;
+      end if;
    end Implicitly_Created;
 
    ----------------------------
@@ -883,7 +892,11 @@ package body TOML is
 
    procedure Set_Implicitly_Created (Self : TOML_Value'Class) is
    begin
-      Self.Value.Implicitly_Created := True;
+      if Self.Kind = TOML_Table then
+         Self.Value.Table_Implicitly_Created := True;
+      else
+         Self.Value.Array_Implicitly_Created := True;
+      end if;
    end Set_Implicitly_Created;
 
    ----------------------------
@@ -892,7 +905,11 @@ package body TOML is
 
    procedure Set_Explicitly_Created (Self : TOML_Value'Class) is
    begin
-      Self.Value.Implicitly_Created := False;
+      if Self.Kind = TOML_Table then
+         Self.Value.Table_Implicitly_Created := False;
+      else
+         Self.Value.Array_Implicitly_Created := False;
+      end if;
    end Set_Explicitly_Created;
 
 end TOML;

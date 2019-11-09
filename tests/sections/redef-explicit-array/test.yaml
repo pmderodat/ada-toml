@@ -1,0 +1,2 @@
+driver: decoder
+error: '3:1: arrays of tables cannot complete inline arrays'

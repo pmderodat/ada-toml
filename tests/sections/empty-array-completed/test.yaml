@@ -1,7 +1,0 @@
-driver: decoder
-output : {
-    "a": [
-        {"key1": {"type": "integer", "value": "1"}},
-        {"key2": {"type": "integer", "value": "2"}},
-    ]
-}

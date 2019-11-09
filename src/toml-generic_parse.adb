@@ -2146,6 +2146,9 @@ is
    -------------------
 
    function Parse_Section (Array_Of_Table : Boolean) return Boolean is
+      Opening_Bracket_Location : constant Source_Location :=
+         Token_Buffer.Location;
+
       Closing_Bracket : constant Token_Kind :=
         (if Array_Of_Table
          then Double_Square_Bracket_Close
@@ -2194,9 +2197,15 @@ is
          begin
             if Arr.Is_Null then
                Arr := Create_Array (TOML_Table);
+               Arr.Set_Implicitly_Created;
                Table.Set (Key, Arr);
             elsif Arr.Item_Kind_Set and then Arr.Item_Kind /= TOML_Table then
-               return Create_Syntax_Error ("invalid array");
+               return Create_Error
+                 ("invalid array", Opening_Bracket_Location);
+            elsif not Arr.Implicitly_Created then
+               return Create_Error
+                 ("arrays of tables cannot complete inline arrays",
+                  Opening_Bracket_Location);
             end if;
 
             --  Create a new table and append it to this array
@@ -2213,11 +2222,13 @@ is
          if Table.Has (Key) then
             Current_Table := Table.Get (Key);
             if Current_Table.Kind /= TOML_Table then
-               return Create_Syntax_Error ("duplicate key");
+               return Create_Error
+                 ("duplicate key", Opening_Bracket_Location);
             elsif Current_Table.Implicitly_Created then
                Current_Table.Set_Explicitly_Created;
             else
-               return Create_Syntax_Error ("cannot create tables twice");
+               return Create_Error
+                 ("cannot create tables twice", Opening_Bracket_Location);
             end if;
          else
             Current_Table := Create_Table;
