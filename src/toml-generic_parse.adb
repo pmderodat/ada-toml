@@ -1021,16 +1021,18 @@ is
                            return False;
                         end if;
 
-                     when WW_Linefeed =>
+                     when ' ' | WW_Tab | WW_Linefeed =>
+
+                        --  This is valid only for multi-line strings. If
+                        --  literal, just append these codepoints. Otherwise we
+                        --  we just found a "line ending backslash": discard
+                        --  all the whitespace characters we find next.
+
                         if not Is_Multiline then
                            return Unterminated_String;
                         elsif Is_Literal then
                            Append_As_UTF8 (WW_Linefeed);
                         else
-                           --  This is a multi-line basic string, and we just
-                           --  found a "line ending backslash": discard all the
-                           --  whitespace characters we find next.
-
                            Discard_Whitespace : loop
                               if not Read_Codepoint then
                                  return False;
