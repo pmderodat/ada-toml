@@ -904,23 +904,25 @@ is
             return False;
 
          elsif Codepoint_Buffer.EOF
-               or else Codepoint_Buffer.Codepoint = WW_Linefeed
+               or else Codepoint_Buffer.Codepoint /= Delimiter
          then
-            --  We found two delimiters and the end of line/file: this
+            --  We found two delimiters not followed by a third one: this
             --  designates an empty string.
 
             Reemit_Codepoint;
             return True;
 
-         elsif Codepoint_Buffer.Codepoint = Delimiter then
+         else
             --  We have three consecutive delimiters: this is a multiline
             --  string.
+
             Is_Multiline := True;
          end if;
 
       else
          --  Never mind: no second delimiter, so put this codepoint back to be
          --  read again in the scanning loop.
+
          Reemit_Codepoint;
       end if;
 

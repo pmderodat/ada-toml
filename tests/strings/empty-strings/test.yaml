@@ -1,0 +1,6 @@
+driver: decoder
+output : {
+    "s1": {"type": "string", "value": ""},
+    "s2": {"type": "string", "value": ""},
+    "s3": {"": {"type": "string", "value": ""}},
+}
