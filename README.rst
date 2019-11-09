@@ -106,3 +106,10 @@ And finally one can turn a tree of TOML nodes back in text form:
 
    Ada.Text_IO.Put_Line ("TOML document:");
    Ada.Text_IO.Put_Line (Table.Dump_As_String);
+
+
+Contributing
+------------
+
+Everyone is welcome to contribute to this project: please read our
+`contribution rules <CONTRIBUTING.rst>`_ if you consider doing so.
