@@ -168,6 +168,10 @@ is
          end if;
       end loop;
 
+      if Length (Key) = 0 then
+         return Format_String (Key);
+      end if;
+
       --  Otherwise, we can return the key as-is (without quoting)
 
       return Key;
