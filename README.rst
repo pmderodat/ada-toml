@@ -15,8 +15,24 @@ important features, mainly: support for floating-point and date/time values.
 Build and install
 -----------------
 
-With an Ada 2012 compiler and GPRbuild, building the library is as simple as
-running:
+With an Ada 2012 compiler and GPRbuild, building and installing the library is
+as simple as running:
+
+.. code-block:: sh
+
+   $ make
+   $ sudo make install
+
+If you don't want to install in ``/usr``, you can replace the last command
+with:
+
+.. code-block:: sh
+
+   $ sudo make install prefix=/where/to/install
+
+Note that the ``Makefile`` is just a wrapper around ``gprbuild`` and
+``gprinstall`` to make it easy for users and packagers. You can also run them
+manually:
 
 .. code-block:: sh
 
