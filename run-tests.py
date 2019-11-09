@@ -12,6 +12,7 @@ import difflib
 import json
 import os.path
 import pprint
+import sys
 
 from e3.fs import sync_tree
 from e3.os.process import Run
@@ -316,6 +317,9 @@ class Testsuite(e3.testsuite.Testsuite):
 
 
 if __name__ == '__main__':
+    # Some test YAML documents create big recursions in the YAML parser
+    sys.setrecursionlimit(10000)
+
     suite = Testsuite(os.path.dirname(__file__))
     suite.testsuite_main()
 
