@@ -2405,6 +2405,7 @@ is
    function Parse_Table (Value : out TOML_Value) return Boolean is
       Comma_Allowed : Boolean := False;
       Key           : Unbounded_UTF8_String;
+      Table         : TOML_Value;
    begin
       Value := Create_Table;
 
@@ -2415,7 +2416,6 @@ is
 
          if not Read_Token (Key_Expected => True) then
             return False;
-
          elsif Token_Buffer.EOF then
             return Create_Syntax_Error;
          end if;
@@ -2435,6 +2435,7 @@ is
                end if;
 
             when String_Literal =>
+
                --  We are expecting a comma right after parsing a value, so if
                --  we have a potential value in this case, we know a comma is
                --  missing.
@@ -2443,16 +2444,23 @@ is
                   return Create_Syntax_Error;
                end if;
 
-               Key := Token_Buffer.Token.String_Value;
+               --  Dotted keys are allowed in inline tables, so attempt to
+               --  parse dotted keys (i.e. multiple tokens) and make sure it is
+               --  followed by an equal token.
 
-               --  Read the equal token
-
-               if not Read_Token (Key_Expected => False) then
+               Table := Value;
+               if not Parse_Dotted_Keys (Table, Key, Traverse_Arrays => False)
+               then
                   return False;
-               elsif Token_Buffer.EOF then
+               elsif Token_Buffer.EOF or else Token_Buffer.Token.Kind /= Equal
+               then
                   return Create_Syntax_Error;
-               elsif Token_Buffer.Token.Kind /= Equal then
-                  return Create_Syntax_Error;
+               end if;
+
+               --  Then try to create the table entry
+
+               if Table.Has (Key) then
+                  return Create_Syntax_Error ("duplicate key");
                end if;
 
                --  Now read the value
@@ -2469,11 +2477,7 @@ is
 
                   --  Finally register the table entry
 
-                  if Value.Has (Key) then
-                     return Create_Error ("duplicate key");
-                  end if;
-
-                  Value.Set (Key, Item);
+                  Table.Set (Key, Item);
                   Comma_Allowed := True;
                end;
 

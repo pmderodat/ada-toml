@@ -1,0 +1,8 @@
+driver: decoder
+output: {
+    "animal": {
+        "type": {
+            "name": {"type": "string", "value": "pug"}
+        }
+    }
+}
