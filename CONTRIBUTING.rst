@@ -23,7 +23,7 @@ Coding style
 ------------
 
 This project follows `GNAT's coding style
-<https://gcc.gnu.org/onlinedocs/gnat-style/General.html>`_. Please use it when
+<https://gcc.gnu.org/onlinedocs/gnat-style/index.html>`_. Please use it when
 sending patches.
 
 
