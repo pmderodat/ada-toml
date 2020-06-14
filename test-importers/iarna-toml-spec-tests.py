@@ -55,15 +55,18 @@ def yaml_to_json(yaml):
     elif isinstance(yaml, list):
         return [yaml_to_json(item) for item in yaml]
 
-    if isinstance(yaml, int):
+    if yaml is False:
+        kind = 'bool',
+        image = 'false'
+    elif yaml is True:
+        kind = 'bool'
+        image = 'true'
+    elif isinstance(yaml, int):
         kind = 'integer'
         image = str(yaml)
     elif isinstance(yaml, str):
         kind = 'string'
         image = yaml
-    elif isinstance(yaml, bool):
-        kind = 'boolean'
-        image = 'true' if yaml else 'false'
     elif isinstance(yaml, float):
         kind = 'float'
         image = str(yaml)
