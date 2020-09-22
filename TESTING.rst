@@ -7,11 +7,12 @@ Running the testsuite requires:
   <https://github.com/AdaCore/e3-testsuite>`_ library (for the testsuite
   framework). See the Python setup section below for a quick guide.
 
-Make sure to build the library first:
+Make sure to build the library and the checkers first:
 
 .. code-block:: sh
 
    $ gprbuild -Pada_toml -p
+   $ gprbuild -Pcheckers -p
 
 And then execute the ``run-tests.py`` script:
 
