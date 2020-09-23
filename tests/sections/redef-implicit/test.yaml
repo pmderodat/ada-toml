@@ -1,9 +1,9 @@
 driver: decoder
 output: {
     "a": {
-        "bar": {"type": "int", "value": "2"},
+        "bar": {"type": "integer", "value": "2"},
         "b": {
-            "foo": {"type": "int", "value": "1"},
+            "foo": {"type": "integer", "value": "1"},
         }
     }
 }
