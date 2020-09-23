@@ -1191,7 +1191,9 @@ is
             when 'x' =>
                Format := Hexadecimal;
 
-            when ' ' | WW_Tab | WW_Linefeed | WW_Carriage_Return =>
+            when ' ' | ',' | '[' | ']'
+               | WW_Tab | WW_Linefeed | WW_Carriage_Return
+            =>
                --  Allowed token separators: stop reading the integer right
                --  here.
 
