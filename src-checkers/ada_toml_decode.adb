@@ -204,11 +204,14 @@ procedure Ada_TOML_Decode is
       end Put;
 
       procedure Put (Time : TOML.Any_Local_Time) is
+         use type TOML.Any_Millisecond;
       begin
          IO.Put (Pad_Number (Time.Hour'Image, 2)
                  & ":" & Pad_Number (Time.Minute'Image, 2)
-                 & ":" & Pad_Number (Time.Second'Image, 2)
-                 & "." & Pad_Number (Time.Millisecond'Image, 3));
+                 & ":" & Pad_Number (Time.Second'Image, 2));
+         if Time.Millisecond /= 0 then
+            IO.Put ("." & Pad_Number (Time.Millisecond'Image, 3));
+         end if;
       end Put;
 
    begin
@@ -292,13 +295,17 @@ procedure Ada_TOML_Decode is
                begin
                   IO.Put ("""");
                   Put (V.Datetime);
-                  if V.Offset < 0 or else V.Unknown_Offset then
-                     IO.Put ("-");
+                  if V.Offset = 0 and then not V.Unknown_Offset then
+                     IO.Put ("Z");
                   else
-                     IO.Put ("+");
+                     if V.Offset <= 0 then
+                        IO.Put ("-");
+                     else
+                        IO.Put ("+");
+                     end if;
+                     IO.Put (Pad_Number (Hour_Offset'Image, 2)
+                             & ":" & Pad_Number (Minute_Offset'Image, 2));
                   end if;
-                  IO.Put (Pad_Number (Hour_Offset'Image, 2)
-                          & ":" & Pad_Number (Minute_Offset'Image, 2));
                   IO.Put_Line ("""");
                end;
 

@@ -103,10 +103,13 @@ procedure Ada_TOML_Encode is
 
    function Interpret (Desc : J.JSON_Value) return TOML.TOML_Value is
 
-      Time_Length            : constant := 12;
-      Date_Length            : constant := 10;
-      Local_Datetime_Length  : constant := Date_Length + 1 + Time_Length;
-      Offset_Datetime_Length : constant := Local_Datetime_Length + 6;
+      Time_Base_Length            : constant := 8;
+      Time_Milli_Length           : constant := 4;
+      Date_Length                 : constant := 10;
+      Local_Datetime_Base_Length  : constant :=
+         Date_Length + 1 + Time_Base_Length;
+      Offset_Datetime_Base_Length : constant := Local_Datetime_Base_Length + 1;
+      Offset_Full_Length          : constant := 6;
 
       function Decode_Offset_Datetime
         (S : String) return TOML.Any_Offset_Datetime;
@@ -124,31 +127,45 @@ procedure Ada_TOML_Encode is
       is
          use type TOML.Any_Local_Offset;
 
-         I : constant Positive := S'First;
+         pragma Assert (S'Length >= Offset_Datetime_Base_Length);
 
-         pragma Assert (S'Length = Offset_Datetime_Length);
-         pragma Assert (S (I + Local_Datetime_Length + 3) = ':');
+         Offset         : TOML.Any_Local_Offset;
+         Unknown_Offset : Boolean;
 
-         Local_Datetime : constant TOML.Any_Local_Datetime :=
-            Decode_Local_Datetime (S (I .. I + Local_Datetime_Length - 1));
-         Offset_Sign    : Character renames S (I + Local_Datetime_Length);
-         Hour_Offset    : String renames S (I + Local_Datetime_Length + 1
-                                            .. I + Local_Datetime_Length + 2);
-         Minute_Offset  : String renames S (I + Local_Datetime_Length + 4
-                                            .. I + Local_Datetime_Length + 5);
-
-         Absolute_Offset   : constant TOML.Any_Local_Offset :=
-            60 * TOML.Any_Local_Offset'Value (Hour_Offset)
-            + TOML.Any_Local_Offset'Value (Minute_Offset);
-         Offset            : constant TOML.Any_Local_Offset :=
-           (case Offset_Sign is
-            when '-'    => -Absolute_Offset,
-            when '+'    => Absolute_Offset,
-            when others => raise Program_Error);
-            Unknown_Offset : constant Boolean :=
-               Offset = 0 and then Offset_Sign = '-';
+         I    : constant Positive := S'First;
+         Last : Positive := S'Last;
       begin
-         return (Local_Datetime, Offset, Unknown_Offset);
+         if S (Last) = 'Z' then
+            Last := Last - 1;
+            Offset := 0;
+            Unknown_Offset := False;
+         else
+            declare
+               pragma Assert (S (Last - 2) = ':');
+
+               Offset_Sign   : Character renames S (Last - 5);
+               Hour_Offset   : String renames S (Last - 4 .. Last - 3);
+               Minute_Offset : String renames S (Last - 1 .. Last);
+            begin
+               Offset := 60 * TOML.Any_Local_Offset'Value (Hour_Offset)
+                         + TOML.Any_Local_Offset'Value (Minute_Offset);
+               case Offset_Sign is
+                  when '-'    => Offset := -Offset;
+                  when '+'    => null;
+                  when others => raise Program_Error;
+               end case;
+               Unknown_Offset := Offset = 0 and then Offset_Sign = '-';
+
+               Last := Last - Offset_Full_Length;
+            end;
+         end if;
+
+         declare
+            Local_Datetime : constant TOML.Any_Local_Datetime :=
+               Decode_Local_Datetime (S (I .. Last));
+         begin
+            return (Local_Datetime, Offset, Unknown_Offset);
+         end;
       end Decode_Offset_Datetime;
 
       ---------------------------
@@ -160,12 +177,15 @@ procedure Ada_TOML_Encode is
       is
          I : constant Positive := S'First;
 
-         pragma Assert (S'Length = Local_Datetime_Length);
+         pragma Assert (S'Length >= Local_Datetime_Base_Length);
          pragma Assert (S (I + Date_Length) = 'T');
+
+         Date : constant TOML.Any_Local_Date :=
+            Decode_Date (S (I .. I + Date_Length - 1));
+         Time : constant TOML.Any_Local_Time :=
+            Decode_Time (S (I + Date_Length + 1 .. S'Last));
       begin
-         return (Decode_Date (S (I .. I + Date_Length - 1)),
-                 Decode_Time (S (I + Date_Length + 1
-                                 .. I + Local_Datetime_Length - 1)));
+         return (Date, Time);
       end Decode_Local_Datetime;
 
       -----------------
@@ -195,19 +215,25 @@ procedure Ada_TOML_Encode is
       function Decode_Time (S : String) return TOML.Any_Local_Time is
          I : constant Positive := S'First;
 
-         pragma Assert (S'Length = Time_Length);
+         pragma Assert (S'Length in Time_Base_Length
+                                  | Time_Base_Length + Time_Milli_Length);
          pragma Assert (S (I + 2) = ':');
          pragma Assert (S (I + 5) = ':');
 
          Hour        : String renames S (I + 0 .. I + 1);
          Minute      : String renames S (I + 3 .. I + 4);
          Second      : String renames S (I + 6 .. I + 7);
-         Millisecond : String renames S (I + 9 .. I + 11);
+         Millisecond : TOML.Any_Millisecond := 0;
       begin
+         if S'Length /= Time_Base_Length then
+            pragma Assert (S (I + Time_Base_Length) = '.');
+            Millisecond := TOML.Any_Millisecond'Value
+              (S (I + Time_Base_Length + 1 .. S'Last));
+         end if;
          return (TOML.Any_Hour'Value (Hour),
                  TOML.Any_Minute'Value (Minute),
                  TOML.Any_Second'Value (Second),
-                 TOML.Any_Millisecond'Value (Millisecond));
+                 Millisecond);
       end Decode_Time;
 
       Result : TOML.TOML_Value;
