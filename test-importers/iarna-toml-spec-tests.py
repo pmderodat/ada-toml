@@ -72,7 +72,12 @@ def yaml_to_json(yaml):
         image = str(yaml)
     elif isinstance(yaml, datetime.datetime):
         kind = 'local-datetime'
-        image = '{:>04}-{:>02}-{:>02}T{:>02}:{:>02}:{:>02}'
+        image = '{:>04}-{:>02}-{:>02}T{:>02}:{:>02}:{:>02}'.format(
+            yaml.year, yaml.month, yaml.day,
+            yaml.hour, yaml.minute, yaml.second
+        )
+        if yaml.microsecond:
+            image = '{}.{:>03}'.format(image, yaml.microsecond)
     else:
         raise ValueError('Unsupported YAML value ({}): {}'
                          .format(type(yaml), yaml))
