@@ -1630,6 +1630,16 @@ is
                   return False;
                end if;
             end loop;
+
+            --  Artificially append zeros so that what we really get is the
+            --  number of milliseconds (".1" should give 100 milliseconds, not
+            --  just 1).
+
+            while Digit_Count < 3 loop
+               Digit_Count := Digit_Count + 1;
+               Millisecond := 10 * Millisecond;
+            end loop;
+
             Reemit_Codepoint;
          end;
       end if;
