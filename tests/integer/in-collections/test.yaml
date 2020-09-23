@@ -8,4 +8,7 @@ output: {
         [{"type": "integer", "value": "0"}],
         [{"type": "integer", "value": "1"}],
     ],
+    "c": {
+        "d": {"type": "integer", "value": "2"},
+    },
 }

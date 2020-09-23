@@ -1191,20 +1191,14 @@ is
             when 'x' =>
                Format := Hexadecimal;
 
-            when ' ' | ',' | '[' | ']'
-               | WW_Tab | WW_Linefeed | WW_Carriage_Return
-            =>
-               --  Allowed token separators: stop reading the integer right
-               --  here.
-
-               Reemit_Codepoint;
-               return True;
-
             when '.' | 'e' | 'E' =>
                return Read_Float (Sign /= Negative, Abs_Value);
 
             when others =>
-               return Create_Lexing_Error;
+               --  Consider all other codepoints as token separators
+
+               Reemit_Codepoint;
+               return True;
          end case;
 
          --  If we had a format specifier sequence, read the next codepoint,
