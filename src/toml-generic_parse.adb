@@ -1850,7 +1850,7 @@ is
 
       Fractional_Value  : Interfaces.Unsigned_64 := 0;
       Exponent          : Interfaces.Unsigned_64 := 0;
-      Exponent_Positive : Boolean := False;
+      Exponent_Positive : Boolean := True;
       Result            : Any_Float (Regular);
    begin
       --  Read the fractional part, if present
