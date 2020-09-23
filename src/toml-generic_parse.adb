@@ -1692,6 +1692,10 @@ is
          --  Individual temporaries for the amount of ours and of minutes for
          --  the local offset.
       begin
+         Token_Buffer.Token :=
+           (Kind                 => Local_Datetime_Literal,
+            Local_Datetime_Value => Datetime);
+
          if not Read_Codepoint then
             return False;
          elsif Codepoint_Buffer.EOF
