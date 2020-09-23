@@ -1851,7 +1851,7 @@ is
       Fractional_Value  : Interfaces.Unsigned_64 := 0;
       Exponent          : Interfaces.Unsigned_64 := 0;
       Exponent_Positive : Boolean := True;
-      Result            : Any_Float (Regular);
+      Result            : Any_Float := (Kind => Regular, Value => <>);
    begin
       --  Read the fractional part, if present
 
@@ -1931,6 +1931,15 @@ is
          when Constraint_Error =>
             return Too_Large;
       end;
+      if not Result.Value'Valid then
+         if Result.Value < Valid_Float'First then
+            Result := (Kind => Infinity, Positive => False);
+         elsif Result.Value > Valid_Float'Last then
+            Result := (Kind => Infinity, Positive => True);
+         else
+            Result := (Kind => NaN, Positive => True);
+         end if;
+      end if;
       Token_Buffer.Token := (Kind => Float_Literal, Float_Value => Result);
       return True;
    end Read_Float;
