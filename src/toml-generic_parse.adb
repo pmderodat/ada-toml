@@ -2218,7 +2218,10 @@ is
                Arr := Create_Array (TOML_Table);
                Arr.Set_Implicitly_Created;
                Table.Set (Key, Arr);
-            elsif Arr.Item_Kind_Set and then Arr.Item_Kind /= TOML_Table then
+            elsif Arr.Kind /= TOML_Array
+                  or else (Arr.Item_Kind_Set
+                           and then Arr.Item_Kind /= TOML_Table)
+            then
                return Create_Error
                  ("invalid array", Opening_Bracket_Location);
             elsif not Arr.Implicitly_Created then
