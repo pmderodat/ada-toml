@@ -667,7 +667,14 @@ package body TOML is
 
       for Key of R.Keys loop
          if Table.Has (Key) then
-            raise Constraint_Error with "duplicate key";
+            if Table.Get (Key).Kind /= TOML_Table
+              or else
+                R.Get (Key).Kind /= TOML_Table
+            then
+               raise Constraint_Error with "duplicate key";
+            else
+               Table.Set (Key, Merge (Table.Get (Key), R.Get (Key)));
+            end if;
          else
             Table.Set (Key, R.Get (Key));
          end if;
