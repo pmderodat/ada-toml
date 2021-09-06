@@ -1300,8 +1300,11 @@ is
 
                   --  If we had no base specifier, we have a floating point
                   --  number.
+                  --
+                  --  Floating point numbers can only use decimal digits, and
+                  --  there must be at least one digit before the dot.
 
-                  if Format /= Decimal then
+                  if Format /= Decimal or Digit_Count = 0 then
                      return Create_Lexing_Error ("invalid float");
                   end if;
                   return Reject_Leading_Zero and then
