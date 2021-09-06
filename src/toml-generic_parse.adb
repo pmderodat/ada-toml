@@ -1237,6 +1237,9 @@ is
             elsif Codepoint_Buffer.EOF then
                Reemit_Codepoint;
                return True;
+            elsif Codepoint_Buffer.Codepoint = '_' then
+               return Create_Lexing_Error
+                 ("underscores must be surrounded by digits");
             end if;
          end if;
 
