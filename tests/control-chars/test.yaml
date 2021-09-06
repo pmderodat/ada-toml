@@ -1,0 +1,2 @@
+driver: decoder
+error: '1:31: invalid ASCII control character'

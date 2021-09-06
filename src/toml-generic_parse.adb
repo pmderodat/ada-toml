@@ -434,20 +434,37 @@ is
          Byte := Character'Pos (Char);
       end if;
 
-      --  If this is a carriage return, discarding after checking that it is
-      --  followed by a linefeed.
+      --  ASCII characters are always one byte long, so we can handle them
+      --  right now: process ASCII's control characters.
 
-      if Char = ASCII.CR then
+      case Char is
+
+      when ASCII.NUL .. ASCII.BS
+         | ASCII.VT
+         | ASCII.FF
+         | ASCII.SO .. ASCII.US
+         | ASCII.DEL =>
+
+         return Create_Error ("invalid ASCII control character");
+
+      when ASCII.CR =>
+
+         --  If this is a carriage return, discarding after checking that it is
+         --  followed by a linefeed.
+
          Get (Stream, EOF, Char);
          if EOF or else Char /= ASCII.LF then
             return Create_Error ("invalid stray carriage return");
          end if;
 
          Byte := Character'Pos (Char);
-      end if;
+
+      when others =>
+         null;
+      end case;
 
       --  Special handling of source location update occurs only with pure
-      --  ASCII characters, so we can handle it here.
+      --  ASCII characters, so we can handle it here, too.
 
       if Codepoint_Buffer.Location = No_Location then
          Codepoint_Buffer.Location := (1, 1);
