@@ -1111,8 +1111,9 @@ is
         (Decimal => 10, Hexadecimal => 16, Binary => 2, Octal => 8);
 
       type Any_Sign is (None, Positive, Negative);
-      Sign : Any_Sign := None;
-      --  Sign for the integer to parse
+      Sign          : Any_Sign := None;
+      Sign_Explicit : Boolean := False;
+      --  Sign for the integer to parse, and whether it was explicit
 
       Abs_Value : Interfaces.Unsigned_64 := 0;
       --  Absolute value for the integer that is parsed
@@ -1144,7 +1145,8 @@ is
       function Reject_Leading_Zero return Boolean is
       begin
          if Leading_Zero then
-            return Create_Lexing_Error ("leading zeros are not allowed");
+            return Create_Lexing_Error
+              ("leading zeros are not allowed in decimals");
          end if;
          return True;
       end Reject_Leading_Zero;
@@ -1173,6 +1175,7 @@ is
          Sign := (if Codepoint_Buffer.Codepoint = '+'
                   then Positive
                   else Negative);
+         Sign_Explicit := True;
          if not Read_Codepoint then
             return False;
          elsif Codepoint_Buffer.EOF then
@@ -1217,6 +1220,13 @@ is
                Reemit_Codepoint;
                return True;
          end case;
+
+         --  Explicit signs are valid only for numbers in decimal form
+
+         if Format /= Decimal and then Sign_Explicit then
+            return Create_Lexing_Error
+              ("explicit sign not allowed but for decimals");
+         end if;
 
          --  If we had a format specifier sequence, read the next codepoint,
          --  which will be the first digit of the number to read.
