@@ -7,9 +7,12 @@ Run this script from the top-level directory in ada-toml's repository, passing
 to it the path to a checkout of the toml-test repository as its first argument.
 """
 
+import json
 import os.path
 import shutil
 import sys
+
+import yaml
 
 
 burntsushi_root = sys.argv[1]
@@ -33,7 +36,7 @@ def create_test_name(toml_file):
 
 def write_test_yaml(test_dir, content):
     with open(os.path.join(test_dir, 'test.yaml'), 'w', encoding='utf-8') as f:
-        print(content, file=f)
+        yaml.dump(content, f)
 
 
 def import_valid(toml_file):
@@ -50,10 +53,8 @@ def import_valid(toml_file):
 
     # Create the test.yaml, including the expected JSON
     with open(json_file, 'r', encoding='utf-8') as f:
-        json = f.read().strip()
-    write_test_yaml(test_dir,
-                    'driver: decoder'
-                    '\noutput: {}'.format(json))
+        json_doc = json.load(f)
+    write_test_yaml(test_dir, {"driver": "decoder", "output": json_doc})
 
 
 def import_invalid(toml_file):
@@ -68,9 +69,7 @@ def import_invalid(toml_file):
     shutil.copy(toml_file, os.path.join(test_dir, 'input.toml'))
 
     # Create the test.yaml
-    write_test_yaml(test_dir,
-                    'driver: decoder'
-                    '\nerror: True')
+    write_test_yaml(test_dir, {"driver": "decoder", "error": True})
 
 
 def iter_tests(root_dir):
