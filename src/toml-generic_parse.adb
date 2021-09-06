@@ -916,7 +916,59 @@ is
       function Unterminated_String return Boolean is
         (Create_Error ("unterminated string"));
 
+      function Skip_Line_Ending_Backslash return Boolean;
+      --  Assuming that, in a multiline string, we just processed a backslash
+      --  followed by a whitespace or a line feed (i.e. a line ending
+      --  backslash), skip all the following whitespaces/line feeds/backslashes
+      --  that should be ignored when processing the string. Return whether
+      --  successful (i.e. if there is no syntax error).
+
       Location : Source_Location;
+
+      --------------------------------
+      -- Skip_Line_Ending_Backslash --
+      --------------------------------
+
+      function Skip_Line_Ending_Backslash return Boolean is
+         Line_Ended : Boolean := Codepoint_Buffer.Codepoint = WW_Linefeed;
+         --  Whether we processed a line feed after the last backslash. We keep
+         --  track of this to make sure that only whitespaces can follow line
+         --  ending backslashes.
+      begin
+         loop
+            if not Read_Codepoint then
+               return False;
+            elsif Codepoint_Buffer.EOF then
+               return Unterminated_String;
+            elsif Codepoint_Buffer.Codepoint not in ' ' | WW_Tab | WW_Linefeed
+            then
+               --  We found something that must not be
+               --  discarded: re-emit it so that the next
+               --  loop iteration processes it.
+
+               Reemit_Codepoint;
+               exit;
+
+            elsif Line_Ended and then Codepoint_Buffer.Codepoint = '\' then
+
+               --  On a separate line, we found a new line ending backslash:
+               --  skip it and only expect whitespaces before the next new
+               --  line.
+
+               Line_Ended := False;
+
+            else
+               Line_Ended :=
+                  Line_Ended or else Codepoint_Buffer.Codepoint in WW_Linefeed;
+            end if;
+         end loop;
+
+         --  There must be a line feed before the first non-whitespace
+         --  codepoint that follows a line ending backslash.
+
+         return (Line_Ended
+                 or else Create_Error ("invalid escape sequence", Location));
+      end Skip_Line_Ending_Backslash;
    begin
       --  Read the potential first character of this string.
 
@@ -1073,23 +1125,8 @@ is
                            return Unterminated_String;
                         elsif Is_Literal then
                            Append_As_UTF8 (WW_Linefeed);
-                        else
-                           Discard_Whitespace : loop
-                              if not Read_Codepoint then
-                                 return False;
-                              elsif Codepoint_Buffer.EOF then
-                                 return Unterminated_String;
-                              elsif Codepoint_Buffer.Codepoint not in
-                                 ' ' | WW_Tab | WW_Linefeed
-                              then
-                                 --  We found something that must not be
-                                 --  discarded: re-emit it so that the next
-                                 --  loop iteration processes it.
-
-                                 Reemit_Codepoint;
-                                 exit Discard_Whitespace;
-                              end if;
-                           end loop Discard_Whitespace;
+                        elsif not Skip_Line_Ending_Backslash then
+                           return False;
                         end if;
 
                      when others =>
