@@ -71,9 +71,9 @@ procedure Ada_TOML_Decode is
               when TOML.TOML_Float           => "float",
               when TOML.TOML_Boolean         => "bool",
               when TOML.TOML_Offset_Datetime => "datetime",
-              when TOML.TOML_Local_Datetime  => "local-datetime",
-              when TOML.TOML_Local_Date      => "date",
-              when TOML.TOML_Local_Time      => "time");
+              when TOML.TOML_Local_Datetime  => "datetime-local",
+              when TOML.TOML_Local_Date      => "date-local",
+              when TOML.TOML_Local_Time      => "time-local");
    end Kind_Name;
 
    ------------------

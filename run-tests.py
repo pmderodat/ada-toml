@@ -131,7 +131,7 @@ class DecoderTestDriver(TestDriver):
                 (t == 'dict' and isinstance(v, dict))
                 or (t == 'array' and isinstance(v, list))
                 or (t in ('string', 'float', 'integer', 'bool', 'datetime',
-                          'local-datetime', 'date', 'time')
+                          'datetime-local', 'date-local', 'time-local')
                     and isinstance(v, str))
             )
 

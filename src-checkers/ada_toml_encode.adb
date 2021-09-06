@@ -313,14 +313,14 @@ procedure Ada_TOML_Encode is
                         Result := TOML.Create_Offset_Datetime
                           (Decode_Offset_Datetime (V.Get));
 
-                     elsif T = "local-datetime" then
+                     elsif T = "datetime-local" then
                         Result := TOML.Create_Local_Datetime
                           (Decode_Local_Datetime (V.Get));
 
-                     elsif T = "date" then
+                     elsif T = "date-local" then
                         Result := TOML.Create_Local_Date (Decode_Date (V.Get));
 
-                     elsif T = "time" then
+                     elsif T = "time-local" then
                         Result := TOML.Create_Local_Time (Decode_Time (V.Get));
 
                      elsif T = "array" then
