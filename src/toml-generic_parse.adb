@@ -54,6 +54,15 @@ is
       Codepoint => <>);
    --  Buffer used to temporarily store information read from Stream
 
+   type Any_String_Format is
+     (Bare_Key,
+      Basic_String,
+      Multiline_Basic_String,
+      Literal_String,
+      Multiline_Literal_String);
+   subtype Valid_Key_Format is Any_String_Format with Static_Predicate =>
+      Valid_Key_Format in Bare_Key | Basic_String | Literal_String;
+
    type Token_Kind is
      (Newline, Equal, Dot, Comma,
 
@@ -76,7 +85,9 @@ is
          when Boolean_Literal        => Boolean_Value : Boolean;
          when Integer_Literal        => Integer_Value : Any_Integer;
          when Float_Literal          => Float_Value   : Any_Float;
-         when String_Literal         => String_Value  : Unbounded_UTF8_String;
+         when String_Literal         =>
+            String_Value  : Unbounded_UTF8_String;
+            String_Format : Any_String_Format;
          when Offset_Datetime_Literal =>
             Offset_Datetime_Value : Any_Offset_Datetime;
          when Local_Datetime_Literal =>
@@ -915,7 +926,11 @@ is
          return Create_Error ("unterminated string");
       end if;
 
-      Token_Buffer.Token := (Kind => String_Literal, others => <>);
+      Token_Buffer.Token :=
+        (Kind          => String_Literal,
+         String_Format =>
+           (if Is_Literal then Literal_String else Basic_String),
+         others        => <>);
 
       --  If we have a second delimiter, then check if this is a multi-line
       --  string.
@@ -939,6 +954,10 @@ is
             --  string.
 
             Is_Multiline := True;
+            Token_Buffer.Token.String_Format :=
+              (if Is_Literal
+               then Multiline_Literal_String
+               else Multiline_Basic_String);
          end if;
 
       else
@@ -2031,7 +2050,10 @@ is
 
    function Read_Bare_Key return Boolean is
    begin
-      Token_Buffer.Token := (Kind => String_Literal, others => <>);
+      Token_Buffer.Token :=
+        (Kind          => String_Literal,
+         String_Format => Bare_Key,
+         others        => <>);
 
       loop
          --  Add the previously read character to the key token
@@ -2314,7 +2336,9 @@ is
       loop
          --  Process the current key, updating Table accordingly
 
-         if Token_Buffer.EOF or else Token_Buffer.Token.Kind /= String_Literal
+         if Token_Buffer.EOF
+            or else Token_Buffer.Token.Kind /= String_Literal
+            or else Token_Buffer.Token.String_Format not in Valid_Key_Format
          then
             return Create_Syntax_Error;
          end if;
