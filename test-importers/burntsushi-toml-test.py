@@ -7,13 +7,13 @@ Run this script from the top-level directory in ada-toml's repository, passing
 to it the path to a checkout of the toml-test repository as its first argument.
 """
 
-import glob
 import os.path
 import shutil
 import sys
 
 
 burntsushi_root = sys.argv[1]
+tests_subdir = os.path.join(burntsushi_root, "tests")
 output_dir = os.path.join(os.getcwd(), 'tests', 'burntsushi-toml-test')
 os.mkdir(output_dir)
 
@@ -27,7 +27,8 @@ def out_path(*args):
 
 
 def create_test_name(toml_file):
-    return os.path.basename(toml_file)[:-5]
+    relname = os.path.relpath(toml_file, tests_subdir)
+    return relname[:-5]
 
 
 def write_test_yaml(test_dir, content):
@@ -38,11 +39,11 @@ def write_test_yaml(test_dir, content):
 def import_valid(toml_file):
     assert toml_file.endswith('.toml')
     test_name = create_test_name(toml_file)
-    json_file = os.path.join(os.path.dirname(toml_file), test_name + '.json')
+    json_file = toml_file[:-5] + '.json'
 
     # Create the test directory
-    test_dir = out_path('valid', test_name)
-    os.mkdir(test_dir)
+    test_dir = out_path(test_name)
+    os.makedirs(test_dir)
 
     # Copy the TOML to parse
     shutil.copy(toml_file, os.path.join(test_dir, 'input.toml'))
@@ -60,8 +61,8 @@ def import_invalid(toml_file):
     test_name = create_test_name(toml_file)
 
     # Create the test directory
-    test_dir = out_path('invalid', test_name)
-    os.mkdir(test_dir)
+    test_dir = out_path(test_name)
+    os.makedirs(test_dir)
 
     # Copy the TOML to parse
     shutil.copy(toml_file, os.path.join(test_dir, 'input.toml'))
@@ -72,10 +73,15 @@ def import_invalid(toml_file):
                     '\nerror: True')
 
 
-os.mkdir(out_path('valid'))
-for valid in glob.glob(in_path('tests', 'valid', '*.toml')):
+def iter_tests(root_dir):
+    for path, _, filenames in os.walk(root_dir):
+        for fn in filenames:
+            if fn.endswith(".toml"):
+                yield os.path.join(path, fn)
+
+
+for valid in iter_tests(in_path('tests', 'valid')):
     import_valid(valid)
 
-os.mkdir(out_path('invalid'))
-for valid in glob.glob(in_path('tests', 'invalid', '*.toml')):
+for valid in iter_tests(in_path('tests', 'invalid')):
     import_invalid(valid)
