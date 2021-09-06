@@ -2458,9 +2458,10 @@ is
    -----------------
 
    function Parse_Table (Value : out TOML_Value) return Boolean is
-      Comma_Allowed : Boolean := False;
-      Key           : Unbounded_UTF8_String;
-      Table         : TOML_Value;
+      Comma_Allowed  : Boolean := False;
+      Last_Was_Comma : Boolean := False;
+      Key            : Unbounded_UTF8_String;
+      Table          : TOML_Value;
    begin
       Value := Create_Table;
 
@@ -2477,12 +2478,16 @@ is
 
          case Token_Buffer.Token.Kind is
             when Curly_Bracket_Close =>
+               if Last_Was_Comma then
+                  return Create_Error ("invalid trailing comma");
+               end if;
                return True;
 
             when Newline =>
                return Create_Error ("newlines not allowed in inlined tables");
 
             when Comma =>
+               Last_Was_Comma := True;
                if Comma_Allowed then
                   Comma_Allowed := False;
                else
@@ -2534,6 +2539,7 @@ is
 
                   Table.Set (Key, Item);
                   Comma_Allowed := True;
+                  Last_Was_Comma := False;
                end;
 
             when others =>
