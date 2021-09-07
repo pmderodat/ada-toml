@@ -113,10 +113,20 @@ is
                      I    : Natural range 3 .. 6 := 6;
                   begin
                      while Byte /= 0 loop
-                        Repr (I) := Character'Val
-                          (Character'Pos ('0') + Byte mod 16);
-                        Byte := Byte / 16;
-                        I := I - 1;
+                        declare
+                           Nibble : constant Interfaces.Unsigned_8 :=
+                              Byte mod 16;
+                           Digit  : Interfaces.Unsigned_8;
+                        begin
+                           if Nibble <= 9 then
+                              Digit := Character'Pos ('0') + Nibble;
+                           else
+                              Digit := Character'Pos ('a') - 10 + Nibble;
+                           end if;
+                           Repr (I) := Character'Val (Digit);
+                           Byte := Byte / 16;
+                           I := I - 1;
+                        end;
                      end loop;
                      Append (Result, Repr);
                   end;

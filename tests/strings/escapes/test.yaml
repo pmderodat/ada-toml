@@ -2,7 +2,7 @@ driver: decoder
 output : {
     "null":      {"type": "string", "value": "\u0000"},
     "bell":      {"type": "string", "value": "\u0007"},
-    "del":       {"type": "string", "value": "\u00ff"},
+    "del":       {"type": "string", "value": "\u007f"},
     "bs":        {"type": "string", "value": "\b"},
     "ht":        {"type": "string", "value": "\t"},
     "lf":        {"type": "string", "value": "\n"},

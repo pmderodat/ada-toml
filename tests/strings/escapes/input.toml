@@ -1,6 +1,6 @@
 null = "\u0000"
 bell = "\u0007"
-del = "\u00ff"
+del = "\u007f"
 bs = "\b"
 ht = "\t"
 lf = "\n"
