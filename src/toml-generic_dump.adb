@@ -490,9 +490,22 @@ is
             end loop;
             Put ("]");
 
-         when others =>
-            --  TODO: implement dump for other kinds of values
-            raise Program_Error;
+         when TOML_Table =>
+            Put ("{");
+            declare
+               First : Boolean := True;
+            begin
+               for E of Value.Iterate_On_Table loop
+                  if not First then
+                     Put (", ");
+                  end if;
+                  Put (To_String (Format_String (E.Key)));
+                  Put (" = ");
+                  Dump_Inline (E.Value);
+                  First := False;
+               end loop;
+            end;
+            Put ("}");
       end case;
    end Dump_Inline;
 

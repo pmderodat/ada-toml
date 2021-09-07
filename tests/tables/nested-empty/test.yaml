@@ -1,0 +1,14 @@
+driver: decoder
+output: {
+    "empty": {
+        "type": "array",
+        "value": [
+            {
+                "type": "array",
+                "value": [
+                    {}
+                ]
+            }
+        ]
+    }
+}
