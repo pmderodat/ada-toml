@@ -200,6 +200,20 @@ class DecoderTestDriver(TestDriver):
                 epsilon = max(abs_a, abs_e) / 10**10
                 if a < e - epsilon or a > e + epsilon:
                     error('value mismatch')
+            elif t in ("datetime", "datetime-local", "time-local"):
+                # Mandatory precision for the time part is millisecond:
+                # truncate it so that we don't check further.
+
+                def truncate_sub_second(value):
+                    if "." in value:
+                        prefix, sub_second = value.split(".")
+                        return f"{prefix}.{sub_second[:3]}"
+                    return value
+
+                exp_v = truncate_sub_second(exp_v)
+                act_v = truncate_sub_second(act_v)
+                if exp_v != act_v:
+                    error("value mismatch")
             elif exp_v != act_v:
                 error('value mismatch')
 
