@@ -1,2 +1,10 @@
 driver: decoder
-error: '1:11: heterogeneous array'
+output: {
+    "a": {
+        "type": "array",
+        "value": [
+            {"type": "integer", "value": "1"},
+            {"type": "string", "value": "a"},
+        ]
+    }
+}

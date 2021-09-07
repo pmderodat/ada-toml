@@ -2210,7 +2210,6 @@ is
 
       elsif Traverse_Arrays
             and then Next_Table.Kind = TOML_Array
-            and then Next_Table.Item_Kind = TOML_Table
             and then Next_Table.Length > 0
       then
          Table := Next_Table.Item (Next_Table.Length);
@@ -2276,13 +2275,10 @@ is
             Arr : TOML_Value := Table.Get_Or_Null (Key);
          begin
             if Arr.Is_Null then
-               Arr := Create_Array (TOML_Table);
+               Arr := Create_Array;
                Arr.Set_Implicitly_Created;
                Table.Set (Key, Arr);
-            elsif Arr.Kind /= TOML_Array
-                  or else (Arr.Item_Kind_Set
-                           and then Arr.Item_Kind /= TOML_Table)
-            then
+            elsif Arr.Kind /= TOML_Array then
                return Create_Error
                  ("invalid array", Opening_Bracket_Location);
             elsif not Arr.Implicitly_Created then
@@ -2478,15 +2474,11 @@ is
                declare
                   Item : TOML_Value;
                begin
-                  --  Parse the item value, reject heterogeneous arrays, and
-                  --  then append the item to the result.
+                  --  Parse the item value and then append the item to the
+                  --  result.
 
                   if not Parse_Value (Item) then
                      return False;
-                  end if;
-
-                  if not Value.Item_Kind_Matches (Item) then
-                     return Create_Error ("heterogeneous array");
                   end if;
 
                   Value.Append (Item);

@@ -41,13 +41,6 @@ package body TOML is
             --  table "a" if we read "[a.b]" but not yet "[a]".
 
          when TOML_Array =>
-            Item_Kind_Set : Boolean;
-            --  Whether the kind for array items have been determined
-
-            Item_Kind : Any_Value_Kind;
-            --  Kind for all items in this array. Valid iff Item_Kind_Set is
-            --  true.
-
             Array_Value : TOML_Vectors.Vector;
             --  List of values for all items
 
@@ -85,11 +78,6 @@ package body TOML is
 
    function Create_Value (Rec : TOML_Value_Record_Access) return TOML_Value;
    --  Wrap a value record in a value. This resets its ref-count to 1.
-
-   procedure Set_Item_Kind (Value : TOML_Value; Item : TOML_Value)
-      with Pre => Value.Kind = TOML_Array;
-   --  If Value (an array) has its item kind set, do nothing. Otherwise, set it
-   --  to Item's kind.
 
    ------------------
    -- Create_Value --
@@ -444,24 +432,6 @@ package body TOML is
       return Natural (Value.Value.Array_Value.Length);
    end Length;
 
-   -------------------
-   -- Item_Kind_Set --
-   -------------------
-
-   function Item_Kind_Set (Value : TOML_Value) return Boolean is
-   begin
-      return Value.Value.Item_Kind_Set;
-   end Item_Kind_Set;
-
-   ---------------
-   -- Item_Kind --
-   ---------------
-
-   function Item_Kind (Value : TOML_Value) return Any_Value_Kind is
-   begin
-      return Value.Value.Item_Kind;
-   end Item_Kind;
-
    ----------
    -- Item --
    ----------
@@ -680,43 +650,14 @@ package body TOML is
    -- Create_Array --
    ------------------
 
-   function Create_Array (Item_Kind : Any_Value_Kind) return TOML_Value is
-   begin
-      return Create_Value (new TOML_Value_Record'
-        (Kind                     => TOML_Array,
-         Ref_Count                => 1,
-         Item_Kind_Set            => True,
-         Item_Kind                => Item_Kind,
-         Array_Value              => <>,
-         Array_Implicitly_Created => False));
-   end Create_Array;
-
-   ------------------
-   -- Create_Array --
-   ------------------
-
    function Create_Array return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
         (Kind                     => TOML_Array,
          Ref_Count                => 1,
-         Item_Kind_Set            => False,
-         Item_Kind                => <>,
          Array_Value              => <>,
          Array_Implicitly_Created => False));
    end Create_Array;
-
-   -------------------
-   -- Set_Item_Kind --
-   -------------------
-
-   procedure Set_Item_Kind (Value : TOML_Value; Item : TOML_Value) is
-   begin
-      if not Value.Item_Kind_Set then
-         Value.Value.Item_Kind_Set := True;
-         Value.Value.Item_Kind := Item.Kind;
-      end if;
-   end Set_Item_Kind;
 
    ---------
    -- Set --
@@ -724,7 +665,6 @@ package body TOML is
 
    procedure Set (Value : TOML_Value; Index : Positive; Item : TOML_Value) is
    begin
-      Set_Item_Kind (Value, Item);
       Value.Value.Array_Value (Index) := Item;
    end Set;
 
@@ -734,7 +674,6 @@ package body TOML is
 
    procedure Append (Value, Item : TOML_Value) is
    begin
-      Set_Item_Kind (Value, Item);
       Value.Value.Array_Value.Append (Item);
    end Append;
 
@@ -746,7 +685,6 @@ package body TOML is
      (Value : TOML_Value; Index : Positive; Item : TOML_Value)
    is
    begin
-      Set_Item_Kind (Value, Item);
       Value.Value.Array_Value.Insert (Index, Item);
    end Insert_Before;
 

@@ -233,8 +233,8 @@ procedure Ada_TOML_Decode is
          IO.Put_Line ("}");
 
       elsif Value.Kind = TOML.TOML_Array
-            and then Value.Item_Kind_Set
-            and then Value.Item_Kind = TOML_Table
+            and then (for all I in 1 .. Value.Length =>
+                      Value.Item (I).Kind = TOML_Table)
       then
          Dump_Array (Value);
 

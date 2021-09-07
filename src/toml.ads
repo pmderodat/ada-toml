@@ -225,23 +225,8 @@ package TOML with Preelaborate is
       with Pre => Value.Kind = TOML_Array;
    --  Return the number of items in Value
 
-   function Item_Kind_Set (Value : TOML_Value) return Boolean
-      with Pre => Value.Kind = TOML_Array;
-   --  Return whether the kind for array items in Value is determined
-
-   function Item_Kind (Value : TOML_Value) return Any_Value_Kind
-      with Pre => Value.Item_Kind_Set;
-   --  Return the kind for array items in Value
-
-   function Item_Kind_Matches
-     (Value : TOML_Value; Item : TOML_Value) return Boolean
-   is (not Value.Item_Kind_Set or else Value.Item_Kind = Item.Kind);
-   --  Return whether Item's kind matches what the Value array expects
-
    function Item (Value : TOML_Value; Index : Positive) return TOML_Value
-      with Pre  => Value.Kind = TOML_Array
-                   and then Index <= Value.Length,
-           Post => Item'Result.Kind = Value.Item_Kind;
+      with Pre  => Value.Kind = TOML_Array and then Index <= Value.Length;
    --  Return the item in Value at the given Index
 
    -------------------
@@ -349,32 +334,21 @@ package TOML with Preelaborate is
    -- Array modifiers --
    ---------------------
 
-   function Create_Array (Item_Kind : Any_Value_Kind) return TOML_Value
-      with Post => Create_Array'Result.Kind = TOML_Array
-                   and then Create_Array'Result.Item_Kind = Item_Kind;
-   --  Create a TOML array to contain items of the given Item_Kind
-
    function Create_Array return TOML_Value
-      with Post => Create_Array'Result.Kind = TOML_Array
-                   and then not Create_Array'Result.Item_Kind_Set;
-   --  Create a TOML array. Kind of array items is left undefined.
+      with Post => Create_Array'Result.Kind = TOML_Array;
+   --  Create a TOML array
 
    procedure Set (Value : TOML_Value; Index : Positive; Item : TOML_Value)
-      with Pre => Value.Kind = TOML_Array
-                  and then Value.Item_Kind_Matches (Item)
-                  and then Index <= Value.Length;
+      with Pre => Value.Kind = TOML_Array and then Index <= Value.Length;
    --  Replace the Index'th item in Value with Item
 
    procedure Append (Value, Item : TOML_Value)
-      with Pre => Value.Kind = TOML_Array
-                  and then Value.Item_Kind_Matches (Item);
+      with Pre => Value.Kind = TOML_Array;
    --  Append Item to the Value array
 
    procedure Insert_Before
      (Value : TOML_Value; Index : Positive; Item : TOML_Value)
-      with Pre => Value.Kind = TOML_Array
-                  and then Value.Item_Kind_Matches (Item)
-                  and then Index < Value.Length + 1;
+      with Pre => Value.Kind = TOML_Array and then Index < Value.Length + 1;
    --  Insert Item before the Item'th element in the Value array
 
    ------------------

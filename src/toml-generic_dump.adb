@@ -255,7 +255,9 @@ is
             when TOML_Table =>
                Append (P, Table_Pairs);
             when TOML_Array =>
-               if P.Value.Item_Kind = TOML_Table then
+               if (for all I in 1 .. P.Value.Length =>
+                   P.Value.Item (I).Kind = TOML_Table)
+               then
                   Append (P, Array_Pairs);
                else
                   Append (P, Other_Pairs);
