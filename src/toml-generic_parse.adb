@@ -1562,7 +1562,8 @@ is
       --  Now try to read a local time: if there is one, we can create a local
       --  datetime, otherwise it's just a local date.
 
-      if not Codepoint_Buffer.EOF and then Codepoint_Buffer.Codepoint = 'T'
+      if not Codepoint_Buffer.EOF
+         and then Codepoint_Buffer.Codepoint in 'T' | 't'
       then
          --  If the first codepoint after the date is 'T', then we know we have
          --  a local time ahead.
@@ -1752,13 +1753,13 @@ is
          if not Read_Codepoint then
             return False;
          elsif Codepoint_Buffer.EOF
-            or else Codepoint_Buffer.Codepoint not in 'Z' | '+' | '-'
+            or else Codepoint_Buffer.Codepoint not in 'Z' | 'z' | '+' | '-'
          then
             Reemit_Codepoint;
             return True;
          end if;
 
-         if Codepoint_Buffer.Codepoint = 'Z' then
+         if Codepoint_Buffer.Codepoint in 'Z' | 'z' then
             Positive_Offset := True;
          else
             Positive_Offset := Codepoint_Buffer.Codepoint = '+';

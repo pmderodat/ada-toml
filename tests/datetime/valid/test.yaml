@@ -35,5 +35,7 @@ output: {
     "odt5": {"type": "datetime", "value": "0001-01-01T00:00:00-01:01"},
     "odt6": {"type": "datetime", "value": "0001-01-01T00:00:00+23:59"},
     "odt7": {"type": "datetime", "value": "0001-01-01T00:00:00-23:59"},
-    "odt8": {"type": "datetime", "value": "9999-12-31T23:59:59.999Z"}
+    "odt8": {"type": "datetime", "value": "9999-12-31T23:59:59.999Z"},
+    "odt9": {"type": "datetime", "value": "0001-01-01T00:00:00Z"},
+    "odt10": {"type": "datetime", "value": "0001-01-01T00:00:00Z"}
 }
