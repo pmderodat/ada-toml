@@ -1,0 +1,11 @@
+driver: decoder
+output: {
+  "sdq": {"type": "string", "value": "\"Single double quotes\""},
+  "ddq": {"type": "string", "value": "\"\"Double double quotes\"\""},
+
+  "ssq": {"type": "string", "value": "'Single single quotes'"},
+  "dsq": {"type": "string", "value": "''Double single quotes''"},
+
+  "v1": {"type": "string", "value": "Variant 1\""},
+  "v2": {"type": "string", "value": "Variant 2\\'"},
+}

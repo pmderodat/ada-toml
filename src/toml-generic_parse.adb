@@ -1080,9 +1080,46 @@ is
                   Append_As_UTF8 (Delimiter);
                   Reemit_Codepoint;
 
-               else
-                  --  We just got the third delimiter, closing the string
+               --  We just got the third delimiter, but we can still have (a)
+               --  one or (b) two more delimiters: in that case the first (a)
+               --  one or (b) two are part of the string, and the last three
+               --  are closing the string. So try reading a fourth delimiter...
 
+               elsif not Read_Codepoint then
+                  return False;
+
+               elsif Codepoint_Buffer.EOF
+                     or else Codepoint_Buffer.Codepoint /= Delimiter
+               then
+                  --  No fourth delimiter: put back the EOF/codepoint and
+                  --  return a successful multiline string parsing.
+
+                  Reemit_Codepoint;
+                  return True;
+
+               else
+                  --  We got a fourth delimiter: append one to the denoted
+                  --  string and try to read the fifth one...
+
+                  Append_As_UTF8 (Delimiter);
+
+                  if not Read_Codepoint then
+                     return False;
+                  elsif Codepoint_Buffer.EOF
+                        or else Codepoint_Buffer.Codepoint /= Delimiter
+                  then
+                     --  Just like above, if we could not get one, just put the
+                     --  codepoint back and return success.
+
+                     Reemit_Codepoint;
+
+                  else
+                     --  We got a fifth delimiter: append yet another delimiter
+                     --  (the second one) to the denoted string and consider
+                     --  the read done.
+
+                     Append_As_UTF8 (Delimiter);
+                  end if;
                   return True;
                end if;
 

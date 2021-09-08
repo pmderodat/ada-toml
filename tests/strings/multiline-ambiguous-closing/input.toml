@@ -1,0 +1,8 @@
+sdq = """"Single double quotes""""
+ddq = """""Double double quotes"""""
+
+ssq = ''''Single single quotes''''
+dsq = '''''Double single quotes'''''
+
+v1 = """Variant 1\""""
+v2 = '''Variant 2\''''
