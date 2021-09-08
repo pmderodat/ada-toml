@@ -570,9 +570,14 @@ is
 
       loop
          --  The location for this token is the location of the codepoint
-         --  cursor before reading it.
+         --  cursor before reading it. Special case for the first token:
+         --  codepoint location is not initialized yet, so use the actual first
+         --  location.
 
          Token_Buffer.Location := Codepoint_Buffer.Location;
+         if Token_Buffer.Location = No_Location then
+            Token_Buffer.Location := (1, 1);
+         end if;
 
          --  Try to read the first codepoint. If we reached the end of file,
          --  communicate this fact to the caller and stop there.
