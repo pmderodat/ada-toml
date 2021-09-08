@@ -180,8 +180,14 @@ class DecoderTestDriver(TestDriver):
             elif t == 'float':
                 # First, check "special values"
                 if (
-                    (exp_v in ('nan', '+nan')
-                     and act_v not in ('nan', '+nan'))
+                    # The standard isn't very clear about the semantics of the
+                    # various NaN's, so accept when "nan" is expected whereas
+                    # while ada_toml writes "-nan" (it happens in the
+                    # BurntSushi testsuite).
+                    (exp_v == 'nan'
+                     and act_v not in ('nan', '+nan', '-nan'))
+                    or (exp_v == '+nan'
+                        and act_v not in ('nan', '+nan'))
                     or (exp_v == '-nan' and act_v != '-nan')
                     or (exp_v in ('inf', '+inf')
                         and act_v not in ('inf', '+inf'))
