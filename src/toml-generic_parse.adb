@@ -1147,6 +1147,13 @@ is
                   if Length (Token_Buffer.Token.String_Value) > 0 then
                      Append_As_UTF8 (WW_Linefeed);
                   end if;
+
+               elsif Codepoint_Buffer.Codepoint = WW_Tab then
+
+                  --  Horizontal tabs are always allowed
+
+                  Append_As_UTF8 (WW_Tab);
+
                else
                   return Create_Error ("invalid string", Location);
                end if;
