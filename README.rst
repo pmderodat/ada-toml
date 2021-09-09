@@ -3,9 +3,7 @@ ada-toml: TOML parser for Ada
 
 ``ada-toml`` is a pure Ada library for parsing and creating `TOML
 <https://github.com/toml-lang/toml#toml>`_ documents. It conforms to the
-`version 0.5.0
-<https://github.com/toml-lang/toml/blob/master/versions/en/toml-v0.5.0.md#toml-v050>`_
-of the format standard.
+`version 1.0.0 <https://toml.io/en/v1.0.0>`_ of the format standard.
 
 
 Build and install
@@ -44,7 +42,9 @@ Installation to ``$PREFIX`` is simply done using GPRinstall:
 
    gprinstall -Pada_toml.gpr --prefix=$PREFIX
 
-See `TESTING.rst <TESTING.rst>`_ to run the testsuite.
+See `TESTING.rst
+<https://github.com/pmderodat/ada_toml/tree/master/TESTING.rst>`_ to run the
+testsuite.
 
 
 Quick tutorial
@@ -123,5 +123,8 @@ And finally one can turn a tree of TOML nodes back in text form:
 Contributing
 ------------
 
-Everyone is welcome to contribute to this project: please read our
-`contribution rules <CONTRIBUTING.rst>`_ if you consider doing so.
+The development of ``ada-toml`` happens on `GitHub
+<https://github.com/pmderodat/ada_toml>`_.  Everyone is welcome to contribute
+to this project: please read our `contribution rules
+<https://github.com/pmderodat/ada_toml/tree/master/CONTRIBUTING.rst>`_ if you
+consider doing so.
