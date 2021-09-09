@@ -629,6 +629,24 @@ package body TOML is
    -----------
 
    function Merge (L, R : TOML_Value) return TOML_Value is
+      function Merge_Entries
+        (Key              : Unbounded_UTF8_String;
+         Dummy_L, Dummy_R : TOML_Value) return TOML_Value
+      is (raise Constraint_Error with "duplicate key: " & To_String (Key));
+   begin
+      return Merge (L, R, Merge_Entries'Access);
+   end Merge;
+
+   -----------
+   -- Merge --
+   -----------
+
+   function Merge
+     (L, R          : TOML_Value;
+      Merge_Entries : not null access function
+        (Key : Unbounded_UTF8_String; L, R : TOML_Value) return TOML_Value)
+      return TOML_Value
+   is
       Table : constant TOML_Value := Create_Table;
    begin
       for Key of L.Keys loop
@@ -636,11 +654,14 @@ package body TOML is
       end loop;
 
       for Key of R.Keys loop
-         if Table.Has (Key) then
-            raise Constraint_Error with "duplicate key";
-         else
-            Table.Set (Key, R.Get (Key));
-         end if;
+         declare
+            Value : TOML_Value := R.Get (Key);
+         begin
+            if Table.Has (Key) then
+               Value := Merge_Entries (Key, Table.Get (Key), Value);
+            end if;
+            Table.Set (Key, Value);
+         end;
       end loop;
 
       return Table;

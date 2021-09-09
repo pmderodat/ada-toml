@@ -1,5 +1,10 @@
 Merging two tables with duplicate keys raises an exception
 
+Merging with conflict resolution...
+a = "good"
+b = "b: hello | world"
+c = "bye"
+
 Merged table:
 a = 1
 b = [

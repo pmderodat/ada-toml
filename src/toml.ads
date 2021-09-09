@@ -330,6 +330,17 @@ package TOML with Preelaborate is
    --  raised. The operation is shallow, so the result table shares values with
    --  L and R.
 
+   function Merge
+     (L, R          : TOML_Value;
+      Merge_Entries : not null access function
+        (Key : Unbounded_UTF8_String; L, R : TOML_Value) return TOML_Value)
+      return TOML_Value
+      with Pre  => L.Kind = TOML_Table and then R.Kind = TOML_Table,
+           Post => Merge'Result.Kind = TOML_Table;
+   --  Merge two tables. If a key is present in both, call Merge_Entries to
+   --  resolve the conflict: use its return value for the entry in the returned
+   --  table.
+
    ---------------------
    -- Array modifiers --
    ---------------------
