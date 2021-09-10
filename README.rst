@@ -124,7 +124,7 @@ Contributing
 ------------
 
 The development of ``ada-toml`` happens on `GitHub
-<https://github.com/pmderodat/ada_toml>`_.  Everyone is welcome to contribute
+<https://github.com/pmderodat/ada-toml>`_.  Everyone is welcome to contribute
 to this project: please read our `contribution rules
-<https://github.com/pmderodat/ada_toml/tree/master/CONTRIBUTING.rst>`_ if you
+<https://github.com/pmderodat/ada-toml/tree/master/CONTRIBUTING.rst>`_ if you
 consider doing so.
