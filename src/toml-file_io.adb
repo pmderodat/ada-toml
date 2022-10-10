@@ -1,4 +1,5 @@
 with Ada.Exceptions;
+with Ada.Streams.Stream_IO;
 
 with TOML.Generic_Dump;
 with TOML.Generic_Parse;
@@ -6,37 +7,38 @@ with TOML.Generic_Parse;
 package body TOML.File_IO is
 
    procedure Get
-     (Stream : in out Ada.Text_IO.File_Type;
+     (Stream : in out Ada.Streams.Stream_IO.File_Type;
       EOF    : out Boolean;
       Byte   : out Character);
    --  Callback for Parse_File
 
    function Parse_File is new TOML.Generic_Parse
-     (Input_Stream => Ada.Text_IO.File_Type,
+     (Input_Stream => Ada.Streams.Stream_IO.File_Type,
       Get          => Get);
-   
+
    procedure Put_To_File (File : in out Ada.Text_IO.File_Type; Bytes : String);
    --  Callback for TOML.Generic_Dump
 
    procedure Dump_To_File is new TOML.Generic_Dump
      (Output_Stream => Ada.Text_IO.File_Type,
-      Put           => Put_To_File);   
+      Put           => Put_To_File);
 
    ---------
    -- Get --
    ---------
 
    procedure Get
-     (Stream : in out Ada.Text_IO.File_Type;
+     (Stream : in out Ada.Streams.Stream_IO.File_Type;
       EOF    : out Boolean;
-      Byte   : out Character) is
+      Byte   : out Character)
+   is
    begin
       EOF := False;
-      Ada.Text_IO.Get_Immediate (Stream, Byte);
+      Character'Read (Ada.Streams.Stream_IO.Stream (Stream), Byte);
    exception
       when Ada.Text_IO.End_Error =>
          EOF := True;
-   end Get;   
+   end Get;
 
    -----------------
    -- Put_To_File --
@@ -53,7 +55,7 @@ package body TOML.File_IO is
    ---------------
 
    function Load_File (Filename : String) return Read_Result is
-      use Ada.Exceptions, Ada.Text_IO;
+      use Ada.Exceptions, Ada.Streams.Stream_IO;
 
       File : File_Type;
    begin
@@ -79,6 +81,6 @@ package body TOML.File_IO is
      (Value : TOML_Value; File : in out Ada.Text_IO.File_Type) is
    begin
       Dump_To_File (File, Value);
-   end Dump_To_File;   
-   
+   end Dump_To_File;
+
 end TOML.File_IO;
