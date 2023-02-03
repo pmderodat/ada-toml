@@ -388,9 +388,18 @@ is
    -------------------------
 
    function Create_Syntax_Error
-     (Message : String := "invalid syntax") return Boolean is
+     (Message : String := "invalid syntax") return Boolean
+   is
+      --  Use the location of the current token if available, otherwise
+      --  fallback to the location of the last codepoint that we read as an
+      --  approximation to designate the end of file.
+
+      Location : constant Source_Location :=
+        (if Token_Buffer.EOF
+         then Codepoint_Buffer.Location
+         else Token_Buffer.Location);
    begin
-      return Create_Error (Message, Token_Buffer.Location);
+      return Create_Error (Message, Location);
    end Create_Syntax_Error;
 
    --------------------
