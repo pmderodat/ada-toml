@@ -352,8 +352,8 @@ class RunProgramTestDriver(TestDriver):
 
         self.fail_if_diff(
             'Unexpected test program output',
-            p.out.splitlines(),
             expected_output,
+            p.out.splitlines(),
             '{} output'.format(self.main_file),
             self.expected_output_file)
 
