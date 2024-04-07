@@ -96,6 +96,17 @@ package TOML with Preelaborate is
       with Dynamic_Predicate => not Any_Offset_Datetime.Unknown_Offset
                                 or else Any_Offset_Datetime.Offset = 0;
 
+   type Source_Location is record
+      Line, Column : Natural;
+   end record;
+   --  Source location inside a TOML document
+
+   No_Location : constant Source_Location := (0, 0);
+
+   function Format_Location (Location : Source_Location) return String;
+   --  Format the given location into the "LINE:COLUMN" format, or an empty
+   --  string if it is No_Location.
+
    -----------------------
    -- Generic accessors --
    -----------------------
@@ -116,7 +127,13 @@ package TOML with Preelaborate is
    --
    --  Note that this is very different from the built-in "=" operator:
    --  the TOML_Value type has by-reference meaning, so "=" compares identity,
-   --  not structural equivalence.
+   --  not structural equivalence. Also note that source locations are ignored
+   --  for equivalence checks.
+
+   function Location (Value : TOML_Value) return Source_Location
+      with Pre => Value.Is_Present;
+   --  Return the first source location that triggered the creation of Value
+   --  while parsing a TOML document. Return No_Location if unknown.
 
    function Clone (Value : TOML_Value) return TOML_Value
       with Pre => Value.Is_Present;
@@ -233,51 +250,67 @@ package TOML with Preelaborate is
    -- Atom creators --
    -------------------
 
-   function Create_Boolean (Value : Boolean) return TOML_Value
+   function Create_Boolean
+     (Value    : Boolean;
+      Location : Source_Location := No_Location) return TOML_Value
       with Post => Create_Boolean'Result.Kind = TOML_Boolean
                    and then Create_Boolean'Result.As_Boolean = Value;
    --  Create a TOML boolean value
 
-   function Create_Integer (Value : Any_Integer) return TOML_Value
+   function Create_Integer
+     (Value    : Any_Integer;
+      Location : Source_Location := No_Location) return TOML_Value
       with Post => Create_Integer'Result.Kind = TOML_Integer
                    and then Create_Integer'Result.As_Integer = Value;
    --  Create a TOML integer value
 
-   function Create_Float (Value : Any_Float) return TOML_Value
+   function Create_Float
+     (Value    : Any_Float;
+      Location : Source_Location := No_Location) return TOML_Value
       with Post => Create_Float'Result.Kind = TOML_Float
                    and then Create_Float'Result.As_Float = Value;
    --  Create a TOML integer value
 
-   function Create_String (Value : String) return TOML_Value
+   function Create_String
+     (Value    : String;
+      Location : Source_Location := No_Location) return TOML_Value
       with Post => Create_String'Result.Kind = TOML_String
                    and then Create_String'Result.As_String = Value;
    --  Create a TOML string value. Value must be a valid UTF-8 string.
 
-   function Create_String (Value : Unbounded_UTF8_String) return TOML_Value
+   function Create_String
+     (Value    : Unbounded_UTF8_String;
+      Location : Source_Location := No_Location) return TOML_Value
       with Post => Create_String'Result.Kind = TOML_String
                    and then Create_String'Result.As_Unbounded_String = Value;
    --  Create a TOML string value
 
    function Create_Offset_Datetime
-     (Value : Any_Offset_Datetime) return TOML_Value
+     (Value    : Any_Offset_Datetime;
+      Location : Source_Location := No_Location) return TOML_Value
       with Post =>
          Create_Offset_Datetime'Result.Kind = TOML_Offset_Datetime
          and then Create_Offset_Datetime'Result.As_Offset_Datetime = Value;
    --  Create a TOML offset datetime value
 
    function Create_Local_Datetime
-     (Value : Any_Local_Datetime) return TOML_Value
+     (Value    : Any_Local_Datetime;
+      Location : Source_Location := No_Location) return TOML_Value
       with Post =>
          Create_Local_Datetime'Result.Kind = TOML_Local_Datetime
          and then Create_Local_Datetime'Result.As_Local_Datetime = Value;
    --  Create a TOML local datetime value
 
-   function Create_Local_Date (Value : Any_Local_Date) return TOML_Value
+   function Create_Local_Date
+     (Value    : Any_Local_Date;
+      Location : Source_Location := No_Location) return TOML_Value
       with Post => Create_Local_Date'Result.Kind = TOML_Local_Date
                    and then Create_Local_Date'Result.As_Local_Date = Value;
    --  Create a TOML local date value
 
-   function Create_Local_Time (Value : Any_Local_Time) return TOML_Value
+   function Create_Local_Time
+     (Value    : Any_Local_Time;
+      Location : Source_Location := No_Location) return TOML_Value
       with Post => Create_Local_Time'Result.Kind = TOML_Local_Time
                    and then Create_Local_Time'Result.As_Local_Time = Value;
    --  Create a TOML local date value
@@ -286,7 +319,8 @@ package TOML with Preelaborate is
    -- Table modifiers --
    ---------------------
 
-   function Create_Table return TOML_Value
+   function Create_Table
+     (Location : Source_Location := No_Location) return TOML_Value
       with Post => Create_Table'Result.Kind = TOML_Table;
    --  Create an empty TOML table
 
@@ -345,7 +379,8 @@ package TOML with Preelaborate is
    -- Array modifiers --
    ---------------------
 
-   function Create_Array return TOML_Value
+   function Create_Array
+     (Location : Source_Location := No_Location) return TOML_Value
       with Post => Create_Array'Result.Kind = TOML_Array;
    --  Create a TOML array
 
@@ -365,12 +400,6 @@ package TOML with Preelaborate is
    ------------------
    -- Input/Output --
    ------------------
-
-   type Source_Location is record
-      Line, Column : Natural;
-   end record;
-
-   No_Location : constant Source_Location := (0, 0);
 
    --  Result of TOML document parsing. If the parsing was successful, contains
    --  the corresponding TOML value, otherwise, contains an error message that

@@ -30,6 +30,7 @@ package body TOML is
 
    type TOML_Value_Record (Kind : Any_Value_Kind) is limited record
       Ref_Count : Natural;
+      Location  : Source_Location;
 
       case Kind is
          when TOML_Table =>
@@ -103,6 +104,26 @@ package body TOML is
          Message  => To_Unbounded_String (Message),
          Location => Location);
    end Create_Error;
+
+   ---------------------
+   -- Format_Location --
+   ---------------------
+
+   function Format_Location (Location : Source_Location) return String is
+   begin
+      if Location.Line = 0 then
+         return "";
+      end if;
+
+      declare
+         L : constant String := Location.Line'Image;
+         C : constant String := Location.Column'Image;
+      begin
+         return L (L'First + 1 .. L'Last)
+                & ":"
+                & C (C'First + 1 .. C'Last);
+      end;
+   end Format_Location;
 
    -------------
    -- Is_Null --
@@ -196,50 +217,61 @@ package body TOML is
       return True;
    end Equals;
 
+   --------------
+   -- Location --
+   --------------
+
+   function Location (Value : TOML_Value) return Source_Location is
+   begin
+      return Value.Value.Location;
+   end Location;
+
    -----------
    -- Clone --
    -----------
 
    function Clone (Value : TOML_Value) return TOML_Value is
       Result : TOML_Value;
+      Loc    : constant Source_Location := Location (Value);
    begin
       case Value.Kind is
          when TOML_Table =>
-            Result := Create_Table;
+            Result := Create_Table (Loc);
             for Key of Value.Keys loop
                Result.Set (Key, Value.Get (Key).Clone);
             end loop;
 
          when TOML_Array =>
-            Result := Create_Array;
+            Result := Create_Array (Loc);
             for I in 1 .. Value.Length loop
                Result.Append (Value.Item (I));
             end loop;
 
          when TOML_String =>
-            Result := Create_String (Value.Value.String_Value);
+            Result := Create_String (Value.Value.String_Value, Loc);
 
          when TOML_Integer =>
-            Result := Create_Integer (Value.Value.Integer_Value);
+            Result := Create_Integer (Value.Value.Integer_Value, Loc);
 
          when TOML_Boolean =>
-            Result := Create_Boolean (Value.Value.Boolean_Value);
+            Result := Create_Boolean (Value.Value.Boolean_Value, Loc);
 
          when TOML_Offset_Datetime =>
             Result :=
-               Create_Offset_Datetime (Value.Value.Offset_Datetime_Value);
+               Create_Offset_Datetime (Value.Value.Offset_Datetime_Value, Loc);
 
          when TOML_Local_Datetime =>
-            Result := Create_Local_Datetime (Value.Value.Local_Datetime_Value);
+            Result := Create_Local_Datetime
+              (Value.Value.Local_Datetime_Value, Loc);
 
          when TOML_Local_Date =>
-            Result := Create_Local_Date (Value.Value.Local_Date_Value);
+            Result := Create_Local_Date (Value.Value.Local_Date_Value, Loc);
 
          when TOML_Local_Time =>
-            Result := Create_Local_Time (Value.Value.Local_Time_Value);
+            Result := Create_Local_Time (Value.Value.Local_Time_Value, Loc);
 
          when TOML_Float =>
-            Result := Create_Float (Value.Value.Float_Value);
+            Result := Create_Float (Value.Value.Float_Value, Loc);
       end case;
 
       return Result;
@@ -445,50 +477,70 @@ package body TOML is
    -- Create_Boolean --
    --------------------
 
-   function Create_Boolean (Value : Boolean) return TOML_Value is
+   function Create_Boolean
+     (Value    : Boolean;
+      Location : Source_Location := No_Location) return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
-        (Kind => TOML_Boolean, Ref_Count => 1, Boolean_Value => Value));
+        (Kind          => TOML_Boolean,
+         Ref_Count     => 1,
+         Location      => Location,
+         Boolean_Value => Value));
    end Create_Boolean;
 
    --------------------
    -- Create_Integer --
    --------------------
 
-   function Create_Integer (Value : Any_Integer) return TOML_Value is
+   function Create_Integer
+     (Value    : Any_Integer;
+      Location : Source_Location := No_Location) return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
-        (Kind => TOML_Integer, Ref_Count => 1, Integer_Value => Value));
+        (Kind          => TOML_Integer,
+         Ref_Count     => 1,
+         Location      => Location,
+         Integer_Value => Value));
    end Create_Integer;
 
    ------------------
    -- Create_Float --
    ------------------
 
-   function Create_Float (Value : Any_Float) return TOML_Value is
+   function Create_Float
+     (Value    : Any_Float;
+      Location : Source_Location := No_Location) return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
-        (Kind => TOML_Float, Ref_Count => 1, Float_Value => Value));
+        (Kind        => TOML_Float,
+         Ref_Count   => 1,
+         Location    => Location,
+         Float_Value => Value));
    end Create_Float;
 
    -------------------
    -- Create_String --
    -------------------
 
-   function Create_String (Value : String) return TOML_Value is
+   function Create_String
+     (Value    : String;
+      Location : Source_Location := No_Location) return TOML_Value is
    begin
-      return Create_String (To_Unbounded_String (Value));
+      return Create_String (To_Unbounded_String (Value), Location);
    end Create_String;
 
    -------------------
    -- Create_String --
    -------------------
 
-   function Create_String (Value : Unbounded_UTF8_String) return TOML_Value is
+   function Create_String
+     (Value    : Unbounded_UTF8_String;
+      Location : Source_Location := No_Location) return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
         (Kind         => TOML_String,
          Ref_Count    => 1,
+         Location     => Location,
          String_Value => Value));
    end Create_String;
 
@@ -497,11 +549,13 @@ package body TOML is
    ----------------------------
 
    function Create_Offset_Datetime
-     (Value : Any_Offset_Datetime) return TOML_Value is
+     (Value    : Any_Offset_Datetime;
+      Location : Source_Location := No_Location) return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
         (Kind                  => TOML_Offset_Datetime,
          Ref_Count             => 1,
+         Location              => Location,
          Offset_Datetime_Value => Value));
    end Create_Offset_Datetime;
 
@@ -510,11 +564,13 @@ package body TOML is
    ---------------------------
 
    function Create_Local_Datetime
-     (Value : Any_Local_Datetime) return TOML_Value is
+     (Value    : Any_Local_Datetime;
+      Location : Source_Location := No_Location) return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
         (Kind                 => TOML_Local_Datetime,
          Ref_Count            => 1,
+         Location             => Location,
          Local_Datetime_Value => Value));
    end Create_Local_Datetime;
 
@@ -522,11 +578,14 @@ package body TOML is
    -- Create_Local_Date --
    -----------------------
 
-   function Create_Local_Date (Value : Any_Local_Date) return TOML_Value is
+   function Create_Local_Date
+     (Value    : Any_Local_Date;
+      Location : Source_Location := No_Location) return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
         (Kind             => TOML_Local_Date,
          Ref_Count        => 1,
+         Location         => Location,
          Local_Date_Value => Value));
    end Create_Local_Date;
 
@@ -534,11 +593,14 @@ package body TOML is
    -- Create_Local_Time --
    -----------------------
 
-   function Create_Local_Time (Value : Any_Local_Time) return TOML_Value is
+   function Create_Local_Time
+     (Value    : Any_Local_Time;
+      Location : Source_Location := No_Location) return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
         (Kind             => TOML_Local_Time,
          Ref_Count        => 1,
+         Location         => Location,
          Local_Time_Value => Value));
    end Create_Local_Time;
 
@@ -546,11 +608,13 @@ package body TOML is
    -- Create_Table --
    ------------------
 
-   function Create_Table return TOML_Value is
+   function Create_Table
+     (Location : Source_Location := No_Location) return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
         (Kind                     => TOML_Table,
          Ref_Count                => 1,
+         Location                 => Location,
          Map_Value                => <>,
          Table_Implicitly_Created => False));
    end Create_Table;
@@ -671,11 +735,13 @@ package body TOML is
    -- Create_Array --
    ------------------
 
-   function Create_Array return TOML_Value is
+   function Create_Array
+     (Location : Source_Location := No_Location) return TOML_Value is
    begin
       return Create_Value (new TOML_Value_Record'
         (Kind                     => TOML_Array,
          Ref_Count                => 1,
+         Location                 => Location,
          Array_Value              => <>,
          Array_Implicitly_Created => False));
    end Create_Array;
@@ -779,15 +845,8 @@ package body TOML is
       Formatted : Unbounded_UTF8_String;
    begin
       if Result.Location.Line /= 0 then
-         declare
-            L : constant String := Result.Location.Line'Image;
-            C : constant String := Result.Location.Column'Image;
-         begin
-            Append (Formatted, L (L'First + 1 .. L'Last));
-            Append (Formatted, ":");
-            Append (Formatted, C (C'First + 1 .. C'Last));
-            Append (Formatted, ": ");
-         end;
+         Append (Formatted, Format_Location (Result.Location));
+         Append (Formatted, ": ");
       end if;
 
       Append (Formatted, Result.Message);
