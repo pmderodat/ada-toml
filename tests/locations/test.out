@@ -1,0 +1,54 @@
+* TOML_TABLE [no location]
+  bar:
+    * TOML_TABLE at 1:1
+      array:
+        * TOML_ARRAY at 1:1
+            * TOML_TABLE at 1:1
+              a:
+                * TOML_BOOLEAN at 2:5
+  foo:
+    * TOML_TABLE at 4:1
+      bool:
+        * TOML_BOOLEAN at 5:8
+      dotted:
+        * TOML_TABLE at 23:1
+          keys:
+            * TOML_TABLE at 23:1
+              a:
+                * TOML_INTEGER at 23:17
+              b:
+                * TOML_INTEGER at 24:17
+      float:
+        * TOML_FLOAT at 7:9
+      inline_arrays:
+        * TOML_ARRAY at 18:17
+            * TOML_INTEGER at 19:4
+            * TOML_INTEGER at 19:7
+            * TOML_ARRAY at 19:10
+                * TOML_INTEGER at 19:12
+                * TOML_INTEGER at 20:4
+            * TOML_INTEGER at 20:8
+      inline_table:
+        * TOML_TABLE at 22:16
+          bar:
+            * TOML_TABLE at 22:33
+              a:
+                * TOML_INTEGER at 22:38
+              b:
+                * TOML_INTEGER at 22:45
+          foo:
+            * TOML_INTEGER at 22:24
+      int:
+        * TOML_INTEGER at 6:7
+      local_date:
+        * TOML_LOCAL_DATE at 13:14
+      local_datetime:
+        * TOML_LOCAL_DATETIME at 15:18
+      local_time:
+        * TOML_LOCAL_TIME at 14:14
+      multiline_string:
+        * TOML_STRING at 9:20
+      offset_datetime:
+        * TOML_OFFSET_DATETIME at 16:19
+      string:
+        * TOML_STRING at 8:10

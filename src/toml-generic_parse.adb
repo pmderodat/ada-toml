@@ -293,12 +293,14 @@ is
    function Get_Table
      (Key             : Unbounded_UTF8_String;
       Table           : in out TOML_Value;
-      Traverse_Arrays : Boolean := False) return Boolean;
+      Traverse_Arrays : Boolean := False;
+      Location        : Source_Location) return Boolean;
    --  Look for a sub-table in Table correspondig to Key. On success, store it
    --  in Table and return True. Otherwise, return False and put an error in
    --  Result.
    --
-   --  If there is no Key entry in Table, create one and register it.
+   --  If there is no Key entry in Table, create one with the given location
+   --  and register it.
    --
    --  If this entry is an array, then assuming all the following hold:
    --
@@ -323,10 +325,12 @@ is
    function Parse_Dotted_Keys
      (Table           : in out TOML_Value;
       Key             : out Unbounded_UTF8_String;
-      Traverse_Arrays : Boolean := False) return Boolean;
+      Traverse_Arrays : Boolean := False;
+      Location        : Source_Location) return Boolean;
    --  Parse a sequence of dotted keys and interpret it as a reference into
    --  Table. Put the last key in Key, and update Table to the referenced table
-   --  (i.e. the one in which Key will reference/create an entry).
+   --  (i.e. the one in which Key will reference/create an entry), creating it
+   --  if needed (and if so, using the given location).
    --
    --  This assumes that the first token that constitutes the dotted keys is in
    --  Token_Buffer. When this returns, the token just passed the dotted keys
@@ -2237,7 +2241,11 @@ is
                --  the key to insert (Key) and make sure there is no existing
                --  entry for Key.
 
-               if not Parse_Dotted_Keys (Table, Key, Traverse_Arrays => False)
+               if not Parse_Dotted_Keys
+                        (Table,
+                         Key,
+                         Traverse_Arrays => False,
+                         Location        => Token_Buffer.Location)
                then
                   return False;
                elsif Table.Has (Key) then
@@ -2283,12 +2291,13 @@ is
    function Get_Table
      (Key             : Unbounded_UTF8_String;
       Table           : in out TOML_Value;
-      Traverse_Arrays : Boolean := False) return Boolean
+      Traverse_Arrays : Boolean := False;
+      Location        : Source_Location) return Boolean
    is
       Next_Table : TOML_Value := Table.Get_Or_Null (Key);
    begin
       if Next_Table.Is_Null then
-         Next_Table := Create_Table;
+         Next_Table := Create_Table (Location);
          Next_Table.Set_Implicitly_Created;
          Table.Set (Key, Next_Table);
          Table := Next_Table;
@@ -2335,7 +2344,12 @@ is
       elsif Token_Buffer.EOF then
          return Create_Syntax_Error;
 
-      elsif not Parse_Dotted_Keys (Table, Key, Traverse_Arrays => True) then
+      elsif not Parse_Dotted_Keys
+                  (Table,
+                   Key,
+                   Traverse_Arrays => True,
+                   Location        => Opening_Bracket_Location)
+      then
          return False;
 
       --  At this point, Parse_Dotted_Keys left the first non-key token in
@@ -2365,7 +2379,7 @@ is
             Arr : TOML_Value := Table.Get_Or_Null (Key);
          begin
             if Arr.Is_Null then
-               Arr := Create_Array;
+               Arr := Create_Array (Opening_Bracket_Location);
                Arr.Set_Implicitly_Created;
                Table.Set (Key, Arr);
             elsif Arr.Kind /= TOML_Array then
@@ -2379,7 +2393,7 @@ is
 
             --  Create a new table and append it to this array
 
-            Current_Table := Create_Table;
+            Current_Table := Create_Table (Opening_Bracket_Location);
             Arr.Append (Current_Table);
          end;
 
@@ -2400,7 +2414,7 @@ is
                  ("cannot create tables twice", Opening_Bracket_Location);
             end if;
          else
-            Current_Table := Create_Table;
+            Current_Table := Create_Table (Opening_Bracket_Location);
             Table.Set (Key, Current_Table);
          end if;
       end if;
@@ -2415,7 +2429,8 @@ is
    function Parse_Dotted_Keys
      (Table           : in out TOML_Value;
       Key             : out Unbounded_UTF8_String;
-      Traverse_Arrays : Boolean := False) return Boolean
+      Traverse_Arrays : Boolean := False;
+      Location        : Source_Location) return Boolean
    is
       Has_Key : Boolean := False;
       --  Whether we parsed at least one key
@@ -2433,7 +2448,9 @@ is
          --  We are about to parse a key. If we already parsed one, we need to
          --  fetch the corresponding table.
 
-         if Has_Key and then not Get_Table (Key, Table, Traverse_Arrays) then
+         if Has_Key
+            and then not Get_Table (Key, Table, Traverse_Arrays, Location)
+         then
             return False;
          end if;
          Key := Token_Buffer.Token.String_Value;
@@ -2471,30 +2488,37 @@ is
 
       case Token_Buffer.Token.Kind is
          when Boolean_Literal =>
-            Value := Create_Boolean (Token_Buffer.Token.Boolean_Value);
+            Value := Create_Boolean
+              (Token_Buffer.Token.Boolean_Value, Token_Buffer.Location);
 
          when Integer_Literal =>
-            Value := Create_Integer (Token_Buffer.Token.Integer_Value);
+            Value := Create_Integer
+              (Token_Buffer.Token.Integer_Value, Token_Buffer.Location);
 
          when Float_Literal =>
-            Value := Create_Float (Token_Buffer.Token.Float_Value);
+            Value := Create_Float
+              (Token_Buffer.Token.Float_Value, Token_Buffer.Location);
 
          when String_Literal =>
-            Value := Create_String (Token_Buffer.Token.String_Value);
+            Value := Create_String
+              (Token_Buffer.Token.String_Value, Token_Buffer.Location);
 
          when Offset_Datetime_Literal =>
             Value := Create_Offset_Datetime
-              (Token_Buffer.Token.Offset_Datetime_Value);
+              (Token_Buffer.Token.Offset_Datetime_Value,
+               Token_Buffer.Location);
 
          when Local_Datetime_Literal =>
             Value := Create_Local_Datetime
-              (Token_Buffer.Token.Local_Datetime_Value);
+              (Token_Buffer.Token.Local_Datetime_Value, Token_Buffer.Location);
 
          when Local_Date_Literal =>
-            Value := Create_Local_Date (Token_Buffer.Token.Local_Date_Value);
+            Value := Create_Local_Date
+              (Token_Buffer.Token.Local_Date_Value, Token_Buffer.Location);
 
          when Local_Time_Literal =>
-            Value := Create_Local_Time (Token_Buffer.Token.Local_Time_Value);
+            Value := Create_Local_Time
+              (Token_Buffer.Token.Local_Time_Value, Token_Buffer.Location);
 
          when Square_Bracket_Open =>
             return Parse_Array (Value);
@@ -2517,7 +2541,7 @@ is
    function Parse_Array (Value : out TOML_Value) return Boolean is
       Comma_Allowed : Boolean := False;
    begin
-      Value := Create_Array;
+      Value := Create_Array (Token_Buffer.Location);
 
       loop
          --  Fetch the next token. We need one, so reaching end of stream is a
@@ -2588,7 +2612,7 @@ is
       Key            : Unbounded_UTF8_String;
       Table          : TOML_Value;
    begin
-      Value := Create_Table;
+      Value := Create_Table (Token_Buffer.Location);
 
       loop
          --  Fetch the next token (a potential key for the next table entry, or
@@ -2634,7 +2658,11 @@ is
                --  followed by an equal token.
 
                Table := Value;
-               if not Parse_Dotted_Keys (Table, Key, Traverse_Arrays => False)
+               if not Parse_Dotted_Keys
+                        (Table,
+                         Key,
+                         Traverse_Arrays => False,
+                         Location        => Token_Buffer.Location)
                then
                   return False;
                elsif Token_Buffer.EOF or else Token_Buffer.Token.Kind /= Equal
