@@ -1936,8 +1936,9 @@ is
         (Create_Lexing_Error ("too large float"));
 
       function Read_Simple_Integer
-        (Value : out Interfaces.Unsigned_64) return Boolean
-         with Pre => not Codepoint_Buffer.EOF;
+        (Value          : out Interfaces.Unsigned_64;
+         Leading_Zeroes : out Natural) return Boolean
+      with Pre => not Codepoint_Buffer.EOF;
       --  Helper to read a simple decimal integer, including underscores
 
       -------------------------
@@ -1945,7 +1946,8 @@ is
       -------------------------
 
       function Read_Simple_Integer
-        (Value : out Interfaces.Unsigned_64) return Boolean
+        (Value          : out Interfaces.Unsigned_64;
+         Leading_Zeroes : out Natural) return Boolean
       is
          use type Interfaces.Unsigned_64;
 
@@ -1958,6 +1960,7 @@ is
          --  check only for consecutive underscores.
       begin
          Value := 0;
+         Leading_Zeroes := 0;
 
          --  Read and decode all digits that follow in the stream
 
@@ -1980,6 +1983,12 @@ is
 
             else
                begin
+                  if Value = 0
+                    and then Digit_Value (Codepoint_Buffer.Codepoint) = 0
+                  then
+                     Leading_Zeroes := Leading_Zeroes + 1;
+                  end if;
+
                   Value :=
                      10 * Value + Digit_Value (Codepoint_Buffer.Codepoint);
 
@@ -2010,10 +2019,11 @@ is
          end if;
       end Read_Simple_Integer;
 
-      Fractional_Value  : Interfaces.Unsigned_64 := 0;
-      Exponent          : Interfaces.Unsigned_64 := 0;
-      Exponent_Positive : Boolean := True;
-      Result            : Any_Float := (Kind => Regular, Value => <>);
+      Fractional_Value          : Interfaces.Unsigned_64 := 0;
+      Fractional_Leading_Zeroes : Natural := 0;
+      Exponent                  : Interfaces.Unsigned_64 := 0;
+      Exponent_Positive         : Boolean := True;
+      Result                    : Any_Float := (Kind => Regular, Value => <>);
    begin
       --  Read the fractional part, if present
 
@@ -2022,7 +2032,9 @@ is
             return False;
          elsif Codepoint_Buffer.EOF then
             return Invalid_Float;
-         elsif not Read_Simple_Integer (Fractional_Value) then
+         elsif not Read_Simple_Integer
+           (Fractional_Value, Fractional_Leading_Zeroes)
+         then
             return False;
          end if;
       end if;
@@ -2051,9 +2063,13 @@ is
 
          --  Then the exponent absolute value
 
-         if not Read_Simple_Integer (Exponent) then
-            return False;
-         end if;
+         declare
+            Dummy_Leading_Zeroes : Natural;
+         begin
+            if not Read_Simple_Integer (Exponent, Dummy_Leading_Zeroes) then
+               return False;
+            end if;
+         end;
       end if;
 
       --  Reemit the last codepoint: it is not part of the float token and the
@@ -2085,7 +2101,8 @@ is
 
          Value_Image : constant String :=
             Image (Positive, Integer_Value)
-            & "." & Image (True, Fractional_Value)
+            & "." & To_String (Fractional_Leading_Zeroes * '0')
+            & Image (True, Fractional_Value)
             & "e" & Image (Exponent_Positive, Exponent);
       begin
          Result.Value := Valid_Float'Value (Value_Image);
