@@ -244,7 +244,7 @@ package body TOML is
          when TOML_Array =>
             Result := Create_Array (Loc);
             for I in 1 .. Value.Length loop
-               Result.Append (Value.Item (I));
+               Result.Append (Value.Item (I).Clone);
             end loop;
 
          when TOML_String =>
