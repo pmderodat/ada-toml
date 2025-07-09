@@ -10,10 +10,11 @@ jobs:
     - name: Checkout ada-toml
       uses: actions/checkout@v1
 
-    - name: Install GNAT Community 2020
-      uses: ada-actions/toolchain@ce2020
+    - name: Install a native FSF GNAT
+      uses: ada-actions/toolchain@dev
       with:
-        distrib: community
+        distrib: fsf
+        target: native
 
     - name: Build ada-toml
       run: gprbuild -Pada_toml -p -j0
