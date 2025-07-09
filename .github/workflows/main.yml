@@ -23,9 +23,9 @@ jobs:
       run: gprbuild -Pcheckers -p -j0
 
     - name: Install Python 3.x
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@master
       with:
-        python-version: '3.x'
+        python-version: '3.12'
 
     - name: Install e3-testsuite
       run: pip install e3-testsuite
