@@ -52,4 +52,6 @@ jobs:
       run: pip install e3-testsuite
 
     - name: Run the testsuite
-      run: ./run-tests.py
+      run: |
+        . ./env
+        ada-toml/run-tests.py --show-error-output
