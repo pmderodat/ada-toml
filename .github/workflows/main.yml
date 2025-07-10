@@ -8,26 +8,50 @@ jobs:
     steps:
 
     - name: Checkout ada-toml
-      uses: actions/checkout@v1
-
-    - name: Install GNAT Community 2020
-      uses: ada-actions/toolchain@ce2020
+      uses: actions/checkout@master
       with:
-        distrib: community
+        path: ada-toml
 
-    - name: Build ada-toml
-      run: gprbuild -Pada_toml -p -j0
+    - name: Checkout gnatcoll-core
+      uses: actions/checkout@master
+      with:
+        repository: AdaCore/gnatcoll-core
+        path: gnatcoll-core
 
-    - name: Build test programs
-      run: gprbuild -Pcheckers -p -j0
+    - name: Cache gnatcoll-core/alire
+      uses: actions/cache@v4
+      with:
+        key: gnatcoll-core-alire
+        path: gnatcoll-core/alire
+
+    - name: Set up Alire
+      uses: alire-project/setup-alire@v4
 
     - name: Install Python 3.x
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@master
       with:
-        python-version: '3.x'
+        python-version: '3.12'
+
+    - name: Build gnatcoll
+      run: |
+        cd gnatcoll-core
+        alr -n build
+        alr -n -q printenv >> ../env
+
+    - name: Build ada-toml
+      run: |
+        . ./env
+        gprbuild -Pada-toml/ada_toml.gpr -p -j0
+
+    - name: Build test programs
+      run: |
+        . ./env
+        gprbuild -Pada-toml/checkers.gpr -p -j0
 
     - name: Install e3-testsuite
       run: pip install e3-testsuite
 
     - name: Run the testsuite
-      run: ./run-tests.py
+      run: |
+        . ./env
+        ada-toml/run-tests.py --show-error-output
