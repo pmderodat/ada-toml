@@ -13,5 +13,10 @@ begin
    Value.Set ("hello", TOML.Create_Boolean (true));
    Value.Get ("array").Append (TOML.Create_Boolean (false));
 
+   --  Verify table in array is a new copy (fix in #45)
+   Value.Get ("array_of_table")
+        .Item (1)
+        .Set ("extra", TOML.Create_String ("new_value"));
+
    Ada.Text_IO.Put_Line (Clone.Dump_As_String);
 end Main;

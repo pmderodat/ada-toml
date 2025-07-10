@@ -2,3 +2,5 @@ array = [true, false]
 bool = true
 int = 0
 string = "Hello, world!"
+[[array_of_table]]
+key = "value"
