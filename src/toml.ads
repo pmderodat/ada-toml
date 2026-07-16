@@ -408,8 +408,14 @@ package TOML with Preelaborate is
    type Read_Result (Success : Boolean := True) is record
       case Success is
          when False =>
+
+            --  For errors that occur not because of the parsing itself, but
+            --  because of infrastructure issues (typically: the file could not
+            --  be read), the Location component will be set to No_Location.
+
             Message  : Unbounded_UTF8_String;
             Location : Source_Location;
+
          when True =>
             Value : TOML_Value;
       end case;
