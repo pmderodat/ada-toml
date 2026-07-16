@@ -63,9 +63,7 @@ package body TOML.File_IO is
          Open (File, In_File, Filename);
       exception
          when Exc : Name_Error | Use_Error =>
-            return Create_Error
-              ("cannot open " & Filename & ": " & Exception_Message (Exc),
-               No_Location);
+            return Create_Error (Exception_Message (Exc), No_Location);
       end;
 
       return Result : constant Read_Result := Parse_File (File) do
