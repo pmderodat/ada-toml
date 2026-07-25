@@ -43,7 +43,7 @@ Installation to ``$PREFIX`` is simply done using GPRinstall:
    gprinstall -Pada_toml.gpr --prefix=$PREFIX
 
 See `TESTING.rst
-<https://github.com/pmderodat/ada_toml/tree/master/TESTING.rst>`_ to run the
+<https://github.com/pmderodat/ada-toml/tree/master/TESTING.rst>`_ to run the
 testsuite.
 
 
