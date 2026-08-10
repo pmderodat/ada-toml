@@ -2,7 +2,7 @@ prefix = /usr
 DESTDIR = $(prefix)
 
 LIBRARY_TYPES = static static-pic relocatable
-BUILD_MODE = prod
+ADA_TOML_BUILD_MODE = prod
 
 PROCESSORS = 0
 
@@ -11,14 +11,14 @@ all: build
 build: build-static build-static-pic build-relocatable
 build-%:
 	gprbuild -Pada_toml \
-		-XBUILD_MODE=$(BUILD_MODE) \
+		-XADA_TOML_BUILD_MODE=$(ADA_TOML_BUILD_MODE) \
 		-XLIBRARY_TYPE=$* \
 		-p -j$(PROCESSORS)
 
 install: install-static install-static-pic install-relocatable
 install-%: build-%
 	gprinstall -Pada_toml \
-		-XBUILD_MODE=$(BUILD_MODE) \
+		-XADA_TOML_BUILD_MODE=$(ADA_TOML_BUILD_MODE) \
 		-XLIBRARY_TYPE=$* \
 		--sources-subdir=include/ada-toml \
 		--prefix="$(DESTDIR)" \
@@ -30,6 +30,6 @@ install-%: build-%
 clean: clean-static clean-static-pic clean-relocatable
 clean-%:
 	gprclean -Pada_toml \
-		-XBUILD_MODE=$(BUILD_MODE) \
+		-XADA_TOML_BUILD_MODE=$(ADA_TOML_BUILD_MODE) \
 		-XLIBRARY_TYPE=$* \
 		-p

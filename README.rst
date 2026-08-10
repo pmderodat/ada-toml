@@ -33,8 +33,8 @@ manually:
    gprbuild -Pada_toml.gpr -p
 
 This will build in debug mode and produce a static library. In order to build
-in production mode, add ``-XBUILD_MODE=prod``, and to build a dynamic library,
-add ``-XLIBRARY_TYPE=static``.
+in production mode, add ``-XADA_TOML_BUILD_MODE=prod``, and to build a dynamic
+library, add ``-XLIBRARY_TYPE=static``.
 
 Installation to ``$PREFIX`` is simply done using GPRinstall:
 
