@@ -107,6 +107,39 @@ procedure Ada_TOML_Decode is
 
    procedure Dump_String (Value : TOML.Unbounded_UTF8_String) is
       use Ada.Strings.Unbounded;
+
+      procedure Dump_Unicode (Codepoint : Interfaces.Unsigned_16);
+      --  Dump an unicode escape sequence (\u...) for the given codepoint
+
+      ------------------
+      -- Dump_Unicode --
+      ------------------
+
+      procedure Dump_Unicode (Codepoint : Interfaces.Unsigned_16) is
+         CP        : Interfaces.Unsigned_16 := Codepoint;
+         CP_Digits : String (1 .. 4);
+      begin
+         IO.Put ("\u");
+         for D of reverse CP_Digits loop
+            declare
+               use type Interfaces.Unsigned_16;
+               subtype Hex_Digit is
+                  Interfaces.Unsigned_16 range 0 ..  15;
+               Digit : constant Hex_Digit := CP mod 16;
+            begin
+               case Digit is
+                  when 0 .. 9 =>
+                     D := Character'Val (Character'Pos ('0') + Digit);
+                  when 10 .. 15 =>
+                     D := Character'Val
+                       (Character'Pos ('A') + Digit - 10);
+               end case;
+               CP := CP / 16;
+            end;
+         end loop;
+         IO.Put (CP_Digits);
+      end Dump_Unicode;
+
    begin
       IO.Put ("""");
       declare
@@ -123,34 +156,30 @@ procedure Ada_TOML_Decode is
                declare
                   use type Interfaces.Unsigned_32;
 
-                  Codepoint    : Interfaces.Unsigned_32 :=
+                  Codepoint    : constant Interfaces.Unsigned_32 :=
                      Wide_Wide_Character'Pos (C);
-                  Digits_Count : constant Positive :=
-                    (if Codepoint <= 16#FFFF# then 4 else 8);
-                  CP_Digits    : String (1 .. Digits_Count);
                begin
-                  if Digits_Count = 4 then
-                     IO.Put ("\u");
+                  --  Dump 16-bit codepoints as a single \u escape sequence.
+                  --  Bigger ones are encoded as a surrogate pair, each encoded
+                  --  using an escape sequence.
+
+                  if Codepoint
+                     < Interfaces.Unsigned_32 (Interfaces.Unsigned_16'Last)
+                  then
+                     Dump_Unicode (Interfaces.Unsigned_16 (Codepoint));
                   else
-                     IO.Put ("\U");
-                  end if;
-                  for D of reverse CP_Digits loop
                      declare
-                        subtype Hex_Digit is
-                           Interfaces.Unsigned_32 range 0 ..  15;
-                        Digit : constant Hex_Digit := Codepoint mod 16;
+                        Surrogate_Base : constant Interfaces.Unsigned_32 :=
+                          Codepoint - 16#1_0000#;
+                        Surrogate_Low  : constant Interfaces.Unsigned_32 :=
+                          16#DC00# or (Surrogate_Base mod 16#400#);
+                        Surrogate_High : constant Interfaces.Unsigned_32 :=
+                          16#D800# or (Surrogate_Base / 16#400#);
                      begin
-                        case Digit is
-                           when 0 .. 9 =>
-                              D := Character'Val (Character'Pos ('0') + Digit);
-                           when 10 .. 15 =>
-                              D := Character'Val
-                                (Character'Pos ('A') + Digit - 10);
-                        end case;
-                        Codepoint := Codepoint / 16;
+                        Dump_Unicode (Interfaces.Unsigned_16 (Surrogate_High));
+                        Dump_Unicode (Interfaces.Unsigned_16 (Surrogate_Low));
                      end;
-                  end loop;
-                  IO.Put (CP_Digits);
+                  end if;
                end;
             end if;
          end loop;

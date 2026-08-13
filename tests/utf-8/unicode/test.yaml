@@ -1,0 +1,6 @@
+driver: decoder
+output : {
+    "pi": {"type": "string", "value": "π"},
+    "ff_ligature": {"type": "string", "value": "ﬀ"},
+    "emoji": {"type": "string", "value": "🙂"},
+}

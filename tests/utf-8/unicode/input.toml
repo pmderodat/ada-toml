@@ -1,0 +1,3 @@
+pi = "π" # '\u03c0'
+ff_ligature = "ﬀ" # '\ufb00'
+emoji = "🙂" # '\U0001f642'
