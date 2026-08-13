@@ -1,6 +1,8 @@
 driver: decoder
 output : {
     "pi": {"type": "string", "value": "π"},
+    "samaritan": {"type": "string", "value": "ࠀ"},
+    "tibetan": {"type": "string", "value": "࿚"},
     "ff_ligature": {"type": "string", "value": "ﬀ"},
     "emoji": {"type": "string", "value": "🙂"},
 }

@@ -425,7 +425,7 @@ is
       Min_Codepoint : constant array (1 .. 4) of Interfaces.Unsigned_32 :=
         (1 => 16#00#,
          2 => 16#80#,
-         3 => 16#80_00#,
+         3 => 16#8_00#,
          4 => 16#1_00_00#);
       --  For each Bytes_Count, smallest codepoint that is allowed
 

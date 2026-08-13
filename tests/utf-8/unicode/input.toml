@@ -1,3 +1,5 @@
 pi = "π" # '\u03c0'
+samaritan = "ࠀ" # '\u0800'
+tibetan = "࿚" # '\u0fda'
 ff_ligature = "ﬀ" # '\ufb00'
 emoji = "🙂" # '\U0001f642'
