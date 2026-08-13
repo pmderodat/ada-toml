@@ -261,7 +261,9 @@ class DecoderTestDriver(TestDriver):
         try:
             p_output_json = json.loads(json_text_output)
         except (UnicodeDecodeError, ValueError) as exc:
-            raise TestAbortWithFailure('Cannot parse the output JSON document')
+            raise TestAbortWithFailure(
+                f"Cannot parse the output JSON document: {exc}"
+            )
 
         self.fail_if_json_mismatch(
             'Unexpected JSON output for the decoder',
